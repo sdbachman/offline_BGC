@@ -1,0 +1,3 @@
+chpl read_netcdf_parallel.chpl -lnetcdf -L/opt/cray/pe/netcdf/4.9.0.7/gnu/9.1/lib -I/opt/cray/pe/netcdf/4.9.0.7/gnu/9.1/include --ldflags="-Wl,-rpath,/opt/cray/pe/netcdf/4.9.0.7/gnu/9.1/lib" --fast
+
+chpl main.chpl -lnetcdf -L/opt/cray/pe/netcdf/4.9.0.7/gnu/9.1/lib -I/opt/cray/pe/netcdf/4.9.0.7/gnu/9.1/include --ldflags="-Wl,-rpath,/opt/cray/pe/netcdf/4.9.0.7/gnu/9.1/lib" --fast
