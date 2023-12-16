@@ -1,23 +1,33 @@
 use StencilDist;
 
-proc set_domains(const D_rho: ?) {
 
-  var locD = D_rho.localSubdomain();
+class Domains {
+  var grid : domain(2);
+  var rho_2D : domain(3);
+  var rho_3D : domain(4);
+  var u_3D : domain(4);
+  var v_3D : domain(4);
+  var w_3D : domain(4);
 
-  var locD_static = {locD.dim[2], locD.dim[3]};
-
-  var locD_2D = {locD.dim[0], locD.dim[2], locD.dim[3]};
-
-  var locD_u = get_locD_u(locD);
-
-  var locD_v = get_locD_v(locD);
-
-  var locD_w = get_locD_w(locD);
-
-  return (locD, locD_static, locD_2D, locD_u, locD_v, locD_w);
 }
 
-proc get_locD_u(ref D: domain(4)) {
+proc set_domains(arg: Domains, const full_domain: ?) {
+
+  arg.rho_3D = full_domain.localSubdomain();
+
+  arg.grid = {arg.rho_3D.dim[2], arg.rho_3D.dim[3]};
+
+  arg.rho_2D = {arg.rho_3D.dim[0], arg.rho_3D.dim[2], arg.rho_3D.dim[3]};
+
+  arg.u_3D = get_u(arg.rho_3D);
+
+  arg.v_3D = get_v(arg.rho_3D);
+
+  arg.w_3D = get_w(arg.rho_3D);
+
+}
+
+proc get_u(ref D: domain(4)) {
 
   var D_u : domain(4);
 
@@ -35,7 +45,7 @@ proc get_locD_u(ref D: domain(4)) {
 }
 
 
-proc get_locD_v(ref D: domain(4)) {
+proc get_v(ref D: domain(4)) {
 
   var D_v = {D.dim[0], D.dim[1], 0..(D.last[2]-1), D.dim[3]};
 
@@ -43,7 +53,7 @@ proc get_locD_v(ref D: domain(4)) {
 }
 
 
-proc get_locD_w(ref D: domain(4)) {
+proc get_w(ref D: domain(4)) {
 
   var D_w = {D.dim[0], 0..(D.last[1]+1), D.dim[2], D.dim[3]};
 
