@@ -11,11 +11,7 @@ record Arrays {
 
   var h : [r2, r3] real;
   var thickness0 : [r1, r2, r3] real;
-  //var volume0 : [r1, r2, r3] real;
   var thickness : [r0, r1, r2, r3] real;
-  //var volume : [r0, r1, r2, r3] real;
-  //var dHdt : [r0, r1, r2, r3] real;
-  //var dVdt : [r0, r1, r2, r3] real;
   var H_plus : [r0, r1, r2, r3] real;
   var H_minus : [r0, r1, r2, r3] real;
 
@@ -62,8 +58,6 @@ proc set_static_arrays(ref A: Arrays, D: Domains) {
 
   A.thickness0 = get_thickness0(A.h);
 
-  //A.volume0 = A.thickness0 * dx * dy;
-
 }
 
 proc update_dynamic_arrays(ref A: Arrays, D: Domains, infiles, step : int) {
@@ -77,9 +71,6 @@ proc update_dynamic_arrays(ref A: Arrays, D: Domains, infiles, step : int) {
 
   // From SM09, Eq. 2.13
     forall (t,k,j,i) in D.rho_3D with (ref A) {
-      //A.dHdt[t,k,j,i] = A.thickness0[k,j,i] * (A.zeta_new[t,j,i] - A.zeta_old[t,j,i]) / (A.h[j,i] * dt);
-      //A.dVdt[t,k,j,i] = A.dHdt[t,k,j,i] * dx * dy;
-
       A.thickness[t,k,j,i] = A.thickness0[k,j,i] * (1 + A.zeta_new[t,j,i] / A.h[j,i]);
     }
 

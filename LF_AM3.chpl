@@ -1,6 +1,7 @@
 use INPUTS;
 use arrays;
 use domains;
+use tracers;
 use NetCDF_IO;
 
 use LinearAlgebra;
@@ -12,7 +13,7 @@ use LinearAlgebra;
 
 
 
-proc TimeStep(ref A: Arrays, D: Domains, tr: ?, tr_old: ?, predictor: ?) {
+proc TimeStep(ref A: Arrays, D: Domains, Tr: Tracers) {
 
   var tmp_U : [D.u_3D] real;
   var tmp_V : [D.v_3D] real;
@@ -33,47 +34,47 @@ proc TimeStep(ref A: Arrays, D: Domains, tr: ?, tr_old: ?, predictor: ?) {
   if (here.id == 0) {
 
     forall (t,k,j,i) in {0..0, D.u_3D.dim[1], D.u_3D.dim[2], D.u_3D.first[3]..D.u_3D.first[3]} with (ref A) {
-        tmp_U[t,k,j,i] = 0.5*(tr[t,k,j,i+1] + tr[t,k,j,i]) * A.U[t,k,j,i];
+        tmp_U[t,k,j,i] = 0.5*(Tr.tracer_new[t,k,j,i+1] + Tr.tracer_new[t,k,j,i]) * A.U[t,k,j,i];
     }
 
     forall (t,k,j,i) in {0..0, D.u_3D.dim[1], D.u_3D.dim[2], (D.u_3D.first[3]+1)..D.u_3D.last[3]} with (ref A) {
         var tmp : real;
         if (A.U[t,k,j,i] > 0) {
-          tmp = tr[t,k,j,i+1] - 2*tr[t,k,j,i] + tr[t,k,j,i-1];
+          tmp = Tr.tracer_new[t,k,j,i+1] - 2*Tr.tracer_new[t,k,j,i] + Tr.tracer_new[t,k,j,i-1];
         }
         else {
-          tmp = tr[t,k,j,i+2] - 2*tr[t,k,j,i+1] + tr[t,k,j,i];
+          tmp = Tr.tracer_new[t,k,j,i+2] - 2*Tr.tracer_new[t,k,j,i+1] + Tr.tracer_new[t,k,j,i];
         }
-        tmp_U[t,k,j,i] = (0.5*(tr[t,k,j,i+1] + tr[t,k,j,i]) - us*tmp) * A.U[t,k,j,i];
+        tmp_U[t,k,j,i] = (0.5*(Tr.tracer_new[t,k,j,i+1] + Tr.tracer_new[t,k,j,i]) - us*tmp) * A.U[t,k,j,i];
     }
   }
   else if (here.id == (Locales.size-1)) {
 
     forall (t,k,j,i) in {0..0, D.u_3D.dim[1], D.u_3D.dim[2], D.u_3D.last[3]..D.u_3D.last[3]} with (ref A) {
-      tmp_U[t,k,j,i] = 0.5*(tr[t,k,j,i+1] + tr[t,k,j,i]) * A.U[t,k,j,i];
+      tmp_U[t,k,j,i] = 0.5*(Tr.tracer_new[t,k,j,i+1] + Tr.tracer_new[t,k,j,i]) * A.U[t,k,j,i];
     }
 
     forall (t,k,j,i) in {0..0, D.u_3D.dim[1], D.u_3D.dim[2], D.u_3D.first[3]..(D.u_3D.last[3]-1)} with (ref A) {
         var tmp : real;
         if (A.U[t,k,j,i] > 0) {
-          tmp = tr[t,k,j,i+1] - 2*tr[t,k,j,i] + tr[t,k,j,i-1];
+          tmp = Tr.tracer_new[t,k,j,i+1] - 2*Tr.tracer_new[t,k,j,i] + Tr.tracer_new[t,k,j,i-1];
         }
         else {
-          tmp = tr[t,k,j,i+2] - 2*tr[t,k,j,i+1] + tr[t,k,j,i];
+          tmp = Tr.tracer_new[t,k,j,i+2] - 2*Tr.tracer_new[t,k,j,i+1] + Tr.tracer_new[t,k,j,i];
         }
-        tmp_U[t,k,j,i] = (0.5*(tr[t,k,j,i+1] + tr[t,k,j,i]) - us*tmp) * A.U[t,k,j,i];
+        tmp_U[t,k,j,i] = (0.5*(Tr.tracer_new[t,k,j,i+1] + Tr.tracer_new[t,k,j,i]) - us*tmp) * A.U[t,k,j,i];
     }
   }
   else {
     forall (t,k,j,i) in D.u_3D with (ref A) {
         var tmp : real;
         if (A.U[t,k,j,i] > 0) {
-          tmp = tr[t,k,j,i+1] - 2*tr[t,k,j,i] + tr[t,k,j,i-1];
+          tmp = Tr.tracer_new[t,k,j,i+1] - 2*Tr.tracer_new[t,k,j,i] + Tr.tracer_new[t,k,j,i-1];
         }
         else {
-          tmp = tr[t,k,j,i+2] - 2*tr[t,k,j,i+1] + tr[t,k,j,i];
+          tmp = Tr.tracer_new[t,k,j,i+2] - 2*Tr.tracer_new[t,k,j,i+1] + Tr.tracer_new[t,k,j,i];
         }
-        tmp_U[t,k,j,i] = (0.5*(tr[t,k,j,i+1] + tr[t,k,j,i]) - us*tmp) * A.U[t,k,j,i];
+        tmp_U[t,k,j,i] = (0.5*(Tr.tracer_new[t,k,j,i+1] + Tr.tracer_new[t,k,j,i]) - us*tmp) * A.U[t,k,j,i];
     }
   }
 
@@ -82,22 +83,22 @@ proc TimeStep(ref A: Arrays, D: Domains, tr: ?, tr_old: ?, predictor: ?) {
   /////////////////////////////////////////
 
   forall (t,k,j,i) in {0..0, D.v_3D.dim[1], D.v_3D.first[2]..D.v_3D.first[2], D.v_3D.dim[3]} with (ref A) {
-    tmp_V[t,k,j,i] = 0.5*(tr[t,k,j+1,i] + tr[t,k,j,i]) * A.V[t,k,j,i];
+    tmp_V[t,k,j,i] = 0.5*(Tr.tracer_new[t,k,j+1,i] + Tr.tracer_new[t,k,j,i]) * A.V[t,k,j,i];
   }
 
   forall (t,k,j,i) in {0..0, D.v_3D.dim[1], D.v_3D.last[2]..D.v_3D.last[2], D.v_3D.dim[3]} with (ref A) {
-    tmp_V[t,k,j,i] = 0.5*(tr[t,k,j+1,i] + tr[t,k,j,i]) * A.V[t,k,j,i];
+    tmp_V[t,k,j,i] = 0.5*(Tr.tracer_new[t,k,j+1,i] + Tr.tracer_new[t,k,j,i]) * A.V[t,k,j,i];
   }
 
   forall (t,k,j,i) in {0..0, D.v_3D.dim[1], (D.v_3D.first[2]+1)..(D.v_3D.last[2]-1), D.v_3D.dim[3]} with (ref A) {
       var tmp : real;
       if (A.V[t,k,j,i] > 0) {
-        tmp = tr[t,k,j+1,i] - 2*tr[t,k,j,i] + tr[t,k,j-1,i];
+        tmp = Tr.tracer_new[t,k,j+1,i] - 2*Tr.tracer_new[t,k,j,i] + Tr.tracer_new[t,k,j-1,i];
       }
       else {
-        tmp = tr[t,k,j+2,i] - 2*tr[t,k,j+1,i] + tr[t,k,j,i];
+        tmp = Tr.tracer_new[t,k,j+2,i] - 2*Tr.tracer_new[t,k,j+1,i] + Tr.tracer_new[t,k,j,i];
       }
-      tmp_V[t,k,j,i] = (0.5*(tr[t,k,j+1,i] + tr[t,k,j,i]) - us*tmp) * A.V[t,k,j,i];
+      tmp_V[t,k,j,i] = (0.5*(Tr.tracer_new[t,k,j+1,i] + Tr.tracer_new[t,k,j,i]) - us*tmp) * A.V[t,k,j,i];
   }
 
   /////////////////////////////////////////
@@ -126,7 +127,7 @@ proc TimeStep(ref A: Arrays, D: Domains, tr: ?, tr_old: ?, predictor: ?) {
       M[k,k-1] = 2*A.thickness[t,k,j,i];
       M[k,k+1] = A.thickness[t,k-1,j,i];
 
-      b[k] = 3*(A.thickness[t,k,j,i]*tr[t,k-1,j,i] + A.thickness[t,k-1,j,i]*tr[t,k,j,i]);
+      b[k] = 3*(A.thickness[t,k,j,i]*Tr.tracer_new[t,k-1,j,i] + A.thickness[t,k-1,j,i]*Tr.tracer_new[t,k,j,i]);
     }
 
     tmp_W[t,0..Nz,j,i] = solve(M, b) * A.W[t,0..Nz,j,i];
@@ -140,34 +141,30 @@ proc TimeStep(ref A: Arrays, D: Domains, tr: ?, tr_old: ?, predictor: ?) {
 
   if (here.id == 0) {
     forall (t,k,j,i) in {0..0, D.rho_3D.dim[1], (D.rho_3D.first[2]+1)..(D.rho_3D.last[2]-1), (D.rho_3D.first[3]+1)..D.rho_3D.last[3]} with (ref A) {
-      predictor[t,k,j,i] = ( 0*((0.5 + 2*gamma) * tr[t,k,j,i] + (0.5 - 2*gamma) * tr_old[t,k,j,i])*A.H_minus[t,k,j,i]
-                         - (1 - 2*gamma)*dt*iarea*(0*(tmp_U[t,k,j,i] - tmp_U[t,k,j,i-1])
+      Tr.predictor[t,k,j,i] = ( ((0.5 + 2*gamma) * Tr.tracer_new[t,k,j,i] + (0.5 - 2*gamma) * Tr.tracer_old[t,k,j,i])*A.H_minus[t,k,j,i]
+                         - (1 - 2*gamma)*dt*iarea*((tmp_U[t,k,j,i] - tmp_U[t,k,j,i-1])
                                                  + (tmp_V[t,k,j,i] - tmp_V[t,k,j-1,i])
-                                                 + 0*(tmp_W[t,k+1,j,i] - tmp_W[t,k,j,i]) ) ) / A.H_plus[t,k,j,i];
-
+                                                 + (tmp_W[t,k+1,j,i] - tmp_W[t,k,j,i]) ) ) / A.H_plus[t,k,j,i];
     }
   }
   else if (here.id == (Locales.size-1)) {
     forall (t,k,j,i) in {0..0, D.rho_3D.dim[1], (D.rho_3D.first[2]+1)..(D.rho_3D.last[2]-1), D.rho_3D.first[3]..(D.rho_3D.last[3]-1)} with (ref A) {
-      predictor[t,k,j,i] = ( 0*((0.5 + 2*gamma) * tr[t,k,j,i] + (0.5 - 2*gamma) * tr_old[t,k,j,i])*A.H_minus[t,k,j,i]
-                         - (1 - 2*gamma)*dt*iarea*(0*(tmp_U[t,k,j,i] - tmp_U[t,k,j,i-1])
+      Tr.predictor[t,k,j,i] = ( ((0.5 + 2*gamma) * Tr.tracer_new[t,k,j,i] + (0.5 - 2*gamma) * Tr.tracer_old[t,k,j,i])*A.H_minus[t,k,j,i]
+                         - (1 - 2*gamma)*dt*iarea*((tmp_U[t,k,j,i] - tmp_U[t,k,j,i-1])
                                                  + (tmp_V[t,k,j,i] - tmp_V[t,k,j-1,i])
-                                                 + 0*(tmp_W[t,k+1,j,i] - tmp_W[t,k,j,i]) ) ) / A.H_plus[t,k,j,i];
-
+                                                 + (tmp_W[t,k+1,j,i] - tmp_W[t,k,j,i]) ) ) / A.H_plus[t,k,j,i];
     }
   }
   else {
     forall (t,k,j,i) in {0..0, D.rho_3D.dim[1], (D.rho_3D.first[2]+1)..(D.rho_3D.last[2]-1), D.rho_3D.first[3]..D.rho_3D.last[3]} with (ref A) {
-      predictor[t,k,j,i] = ( 0*((0.5 + 2*gamma) * tr[t,k,j,i] + (0.5 - 2*gamma) * tr_old[t,k,j,i])*A.H_minus[t,k,j,i]
-                         - (1 - 2*gamma)*dt*iarea*(0*(tmp_U[t,k,j,i] - tmp_U[t,k,j,i-1])
+      Tr.predictor[t,k,j,i] = ( ((0.5 + 2*gamma) * Tr.tracer_new[t,k,j,i] + (0.5 - 2*gamma) * Tr.tracer_old[t,k,j,i])*A.H_minus[t,k,j,i]
+                         - (1 - 2*gamma)*dt*iarea*((tmp_U[t,k,j,i] - tmp_U[t,k,j,i-1])
                                                  + (tmp_V[t,k,j,i] - tmp_V[t,k,j-1,i])
-                                                 + 0*(tmp_W[t,k+1,j,i] - tmp_W[t,k,j,i]) ) ) / A.H_plus[t,k,j,i];
-      //predictor[t,k,j,i] = A.H_minus[t,k,j,i] / A.H_plus[t,k,j,i];
-
+                                                 + (tmp_W[t,k+1,j,i] - tmp_W[t,k,j,i]) ) ) / A.H_plus[t,k,j,i];
     }
   }
 
-   WriteOutput("pred.nc", predictor, "predictor", "stuff", 10);
+   WriteOutput("predictor.nc", Tr.predictor, "tracer", "stuff", 10);
 
 
 }

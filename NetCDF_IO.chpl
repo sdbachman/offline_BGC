@@ -404,8 +404,6 @@ proc WriteOutput(filename : string, ref arr_in: [?D] real, varName : string, uni
     extern proc nc_inq_varid(ncid: c_int, varName: c_ptrConst(c_char), varid: c_ptr(c_int));
     nc_inq_varid(ncid, varName.c_str(), c_ptrTo(varid));
 
-    writeln(here.id, ": ", start, "    ", count);
-
     extern proc nc_put_vara_double(ncid : c_int, varid : c_int, startp : c_ptr(c_size_t), countp : c_ptr(c_size_t), op : c_ptr(c_double)) : c_int;
     nc_put_vara_double(ncid, varid, c_ptrTo(start_c), c_ptrTo(count_c), c_ptrTo(tmp_arr[start]));
 
