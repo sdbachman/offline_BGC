@@ -7,17 +7,16 @@ use LinearAlgebra;
 use IO.FormattedIO;
 use Math;
 use AllLocalesBarriers;
-use FileSystem;
 
 use NetCDF_IO;
-use sigma_coordinate;
 use LF_AM3;
 use INPUTS;
+use files;
 use domains;
 use arrays;
 use tracers;
 
-proc main(args: [] string) {
+proc main() {
 
   var t : stopwatch;
   t.start();
@@ -26,15 +25,17 @@ proc main(args: [] string) {
 
   coforall loc in Locales with (ref Tr) do on loc {
 
-    var infiles = glob('/glade/derecho/scratch/bachman/UCLA-ROMS/run/SMALL/SMALL_avg.??????????????.nc');
+    var locF = new owned Files();
 
     var locD = new owned Domains();
     set_domains(locD, Tr.D);
 
-    var locA = new Arrays(locD);
-    set_static_arrays(locA, locD);
+    var locA_curr = new Arrays(locD);
+    var locA_next = new Arrays(locD);
+    set_static_arrays(locA_curr, locD, locF);
+    set_static_arrays(locA_next, locD, locF);
 
-    initialize(Tr, infiles[Nt_start], locD);
+    initialize(Tr, locF.vel[Nt_start], locD);
 
     update_halos(Tr);
 
@@ -43,9 +44,8 @@ proc main(args: [] string) {
     // timestepping loop
     for step in (Nt_start)..(Nt_start+Nt) {
 
-      update_dynamic_arrays(locA, locD, infiles, step);
-
-      TimeStep(locA, locD, Tr);
+      // LF-AM3 timestep
+      TimeStep(locA_curr, locA_next, locD, Tr, locF, step);
 
     } // timestepping loop
 

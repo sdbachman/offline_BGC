@@ -1,3 +1,5 @@
+use INPUTS;
+
 use NetCDF.C_NetCDF;
 use CTypes;
 use AllLocalesBarriers;
@@ -64,16 +66,7 @@ proc get_shape (filename : string, varName : string) {
 
 proc get_var(filename : string, varName : string, dom_in) {
 
-      //const D = dom_in dmapped blockDist (dom_in);
-      //var dist_array : [D] real(64);
-
       var in_array : [dom_in] real(64);
-
-      //var t : stopwatch;
-      //t.start();
-
-      //coforall loc in Locales with (ref dist_array) do on loc {
-        //writeln("Local subdomain on Locale ", here.id, ": \n", D.localSubdomain());
 
         /* Some external procedure declarations */
           extern proc nc_get_vara_double(ncid : c_int, varid : c_int, startp : c_ptr(c_size_t), countp : c_ptr(c_size_t), ip : c_ptr(real(64))) : c_int;
@@ -102,15 +95,195 @@ proc get_var(filename : string, varName : string, dom_in) {
 
           nc_get_vara_double(ncid, varid, c_ptrTo(start_c), c_ptrTo(count_c), c_ptrTo(in_array[start]));
 
-          //writeln("On locale ", here.id, " with start: ", start, ", and count:", count, ",\n", dist_array[dist_array.localSubdomain()]);
-          //writeln("On locale ", here.id, " read finished in ", t.elapsed(), " seconds.");
+          nc_close(ncid);
+
+      return in_array;
+
+}
+
+
+proc get_bry(filename : string, varName : string, ref arr, dom_in) {
+
+        /* Some external procedure declarations */
+          extern proc nc_get_vara_double(ncid : c_int, varid : c_int, startp : c_ptr(c_size_t), countp : c_ptr(c_size_t), ip : c_ptr(real(64))) : c_int;
+          extern proc nc_open(path : c_ptrConst(c_char), mode : c_int, ncidp : c_ptr(c_int)) : c_int;
+          extern proc nc_inq_varid(ncid: c_int, varName: c_ptrConst(c_char), varid: c_ptr(c_int));
+
+        /* Determine where to start reading file, and how many elements to read */
+
+        if (here.id == 0) {
+
+          // Start specifies a hyperslab.  It expects an array of dimension sizes
+          var first = dom_in.localSubdomain().first;
+          var last  = dom_in.localSubdomain().last;
+
+          // Count specifies a hyperslab.  It expects an array of dimension sizes
+          var shape = dom_in.localSubdomain().shape;
+
+          var tmp_west : [first[1]..last[1], first[2]..last[2]] real;
+          var tmp_north : [first[1]..last[1], first[3]..last[3]] real;
+          var tmp_south : [first[1]..last[1], first[3]..last[3]] real;
+
+          var start_w = (first[1], first[2]);
+          var count_w = (shape[1], shape[2]);
+
+          var start_n = (first[1], first[3]);
+          var count_n = (shape[1], shape[3]);
+
+          var start_s = (first[1], first[3]);
+          var count_s = (shape[1], shape[3]);
+
+        /* Create arrays of c_size_t for compatibility with NetCDF-C functions. */
+          var start_w_c = [i in 0..#start_w.size] start_w[i] : c_size_t;
+          var count_w_c = [i in 0..#count_w.size] count_w[i] : c_size_t;
+
+          var start_n_c = [i in 0..#start_n.size] start_n[i] : c_size_t;
+          var count_n_c = [i in 0..#count_n.size] count_n[i] : c_size_t;
+
+          var start_s_c = [i in 0..#start_s.size] start_s[i] : c_size_t;
+          var count_s_c = [i in 0..#count_s.size] count_s[i] : c_size_t;
+
+          var ncid : c_int;
+          var varid_w : c_int;
+          var varid_n : c_int;
+          var varid_s : c_int;
+
+        /* Open the file */
+          nc_open(filename.c_str(), NC_NOWRITE, ncid);
+
+        /* Get the variable ID */
+          var vw = varName + "_west";
+          nc_inq_varid(ncid, vw.c_str(), c_ptrTo(varid_w));
+
+          var vn = varName + "_north";
+          nc_inq_varid(ncid, vn.c_str(), c_ptrTo(varid_n));
+
+          var vs = varName + "_south";
+          nc_inq_varid(ncid, vs.c_str(), c_ptrTo(varid_s));
+
+          nc_get_vara_double(ncid, varid_w, c_ptrTo(start_w_c), c_ptrTo(count_w_c), c_ptrTo(tmp_west[start_w]));
+          arr[0,0..<Nz,..,0] = tmp_west;
+
+          nc_get_vara_double(ncid, varid_n, c_ptrTo(start_n_c), c_ptrTo(count_n_c), c_ptrTo(tmp_north[start_n]));
+          arr[0,0..<Nz,last[2],first[3]..last[3]] = tmp_north;
+
+          nc_get_vara_double(ncid, varid_s, c_ptrTo(start_s_c), c_ptrTo(count_s_c), c_ptrTo(tmp_south[start_s]));
+          arr[0,0..<Nz,0,first[3]..last[3]] = tmp_south;
 
           nc_close(ncid);
-      //}
-      //var D_sum = + reduce dist_array;
-      //writeln("Sum is ", D_sum);
-      //writeln("On locale ", here.id, " sum finished in ", t.elapsed(), " seconds.");
-      return in_array;
+
+         }
+         else if (here.id == (Locales.size-1)) {
+
+          // Start specifies a hyperslab.  It expects an array of dimension sizes
+          var first = dom_in.localSubdomain().first;
+          var last  = dom_in.localSubdomain().last;
+
+          // Count specifies a hyperslab.  It expects an array of dimension sizes
+          var shape = dom_in.localSubdomain().shape;
+
+          var tmp_east : [first[1]..last[1], first[2]..last[2]] real;
+          var tmp_north : [first[1]..last[1], first[3]..last[3]] real;
+          var tmp_south : [first[1]..last[1], first[3]..last[3]] real;
+
+          var start_e = (first[1], first[2]);
+          var count_e = (shape[1], shape[2]);
+
+          var start_n = (first[1], first[3]);
+          var count_n = (shape[1], shape[3]);
+
+          var start_s = (first[1], first[3]);
+          var count_s = (shape[1], shape[3]);
+
+        /* Create arrays of c_size_t for compatibility with NetCDF-C functions. */
+          var start_e_c = [i in 0..#start_e.size] start_e[i] : c_size_t;
+          var count_e_c = [i in 0..#count_e.size] count_e[i] : c_size_t;
+
+          var start_n_c = [i in 0..#start_n.size] start_n[i] : c_size_t;
+          var count_n_c = [i in 0..#count_n.size] count_n[i] : c_size_t;
+
+          var start_s_c = [i in 0..#start_s.size] start_s[i] : c_size_t;
+          var count_s_c = [i in 0..#count_s.size] count_s[i] : c_size_t;
+
+          var ncid : c_int;
+          var varid_e : c_int;
+          var varid_n : c_int;
+          var varid_s : c_int;
+
+        /* Open the file */
+          nc_open(filename.c_str(), NC_NOWRITE, ncid);
+
+        /* Get the variable ID */
+          var ve = varName + "_east";
+          nc_inq_varid(ncid, ve.c_str(), c_ptrTo(varid_e));
+
+          var vn = varName + "_north";
+          nc_inq_varid(ncid, vn.c_str(), c_ptrTo(varid_n));
+
+          var vs = varName + "_south";
+          nc_inq_varid(ncid, vs.c_str(), c_ptrTo(varid_s));
+
+          nc_get_vara_double(ncid, varid_e, c_ptrTo(start_e_c), c_ptrTo(count_e_c), c_ptrTo(tmp_east[start_e]));
+          arr[0,0..<Nz,..,last[3]] = tmp_east;
+
+          nc_get_vara_double(ncid, varid_n, c_ptrTo(start_n_c), c_ptrTo(count_n_c), c_ptrTo(tmp_north[start_n]));
+          arr[0,0..<Nz,last[2],first[3]..last[3]] = tmp_north;
+
+          nc_get_vara_double(ncid, varid_s, c_ptrTo(start_s_c), c_ptrTo(count_s_c), c_ptrTo(tmp_south[start_s]));
+          arr[0,0..<Nz,0,first[3]..last[3]] = tmp_south;
+
+          nc_close(ncid);
+
+         }
+         else {
+          // Start specifies a hyperslab.  It expects an array of dimension sizes
+          var first = dom_in.localSubdomain().first;
+          var last  = dom_in.localSubdomain().last;
+
+          // Count specifies a hyperslab.  It expects an array of dimension sizes
+          var shape = dom_in.localSubdomain().shape;
+
+          var tmp_north : [first[1]..last[1], first[3]..last[3]] real;
+          var tmp_south : [first[1]..last[1], first[3]..last[3]] real;
+
+          var start_n = (first[1], first[3]);
+          var count_n = (shape[1], shape[3]);
+
+          var start_s = (first[1], first[3]);
+          var count_s = (shape[1], shape[3]);
+
+        /* Create arrays of c_size_t for compatibility with NetCDF-C functions. */
+
+          var start_n_c = [i in 0..#start_n.size] start_n[i] : c_size_t;
+          var count_n_c = [i in 0..#count_n.size] count_n[i] : c_size_t;
+
+          var start_s_c = [i in 0..#start_s.size] start_s[i] : c_size_t;
+          var count_s_c = [i in 0..#count_s.size] count_s[i] : c_size_t;
+
+          var ncid : c_int;
+          var varid_n : c_int;
+          var varid_s : c_int;
+
+        /* Open the file */
+          nc_open(filename.c_str(), NC_NOWRITE, ncid);
+
+        /* Get the variable ID */
+
+          var vn = varName + "_north";
+          nc_inq_varid(ncid, vn.c_str(), c_ptrTo(varid_n));
+
+          var vs = varName + "_south";
+          nc_inq_varid(ncid, vs.c_str(), c_ptrTo(varid_s));
+
+          nc_get_vara_double(ncid, varid_n, c_ptrTo(start_n_c), c_ptrTo(count_n_c), c_ptrTo(tmp_north[start_n]));
+          arr[0,0..<Nz,last[2],first[3]..last[3]] = tmp_north;
+
+          nc_get_vara_double(ncid, varid_s, c_ptrTo(start_s_c), c_ptrTo(count_s_c), c_ptrTo(tmp_south[start_s]));
+          arr[0,0..<Nz,0,first[3]..last[3]] = tmp_south;
+
+          nc_close(ncid);
+
+         }
 
 }
 
@@ -411,6 +584,8 @@ proc WriteOutput(filename : string, ref arr_in: [?D] real, varName : string, uni
 
     const inc = (y.read() + 1) % numLocales;
     y.write(inc);
+
+    allLocalesBarrier.barrier();
 }
 
 

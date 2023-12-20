@@ -3,6 +3,9 @@ use FileSystem;
 /* INPUT PARAMETERS */
 
 config const gridfile = '/glade/derecho/scratch/bachman/UCLA-ROMS/Work/SMALL/INPUT/roms_grd.nc';
+config var velfiles = '/glade/derecho/scratch/bachman/UCLA-ROMS/run/SMALL/SMALL_avg.??????????????.nc';
+config var bryfiles = '/glade/derecho/scratch/bachman/UCLA-ROMS/run/SMALL/SMALL_bry.??????????????.nc';
+config const frcfiles = '/glade/derecho/scratch/bachman/UCLA-ROMS/run/SMALL/SMALL_frc.??????????????.nc';
 
 config const Nx = 66;
 config const Ny = 34;
