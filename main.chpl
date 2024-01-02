@@ -21,33 +21,38 @@ proc main() {
   var t : stopwatch;
   t.start();
 
-    var Tr = new owned Tracers();
+  var Tr_next = new owned Tracers();
+  var Tr_curr = new owned Tracers();
+  var Tr_prev = new owned Tracers();
 
-  coforall loc in Locales with (ref Tr) do on loc {
+  coforall loc in Locales with (ref Tr_next, ref Tr_curr, ref Tr_prev) do on loc {
 
     var locF = new owned Files();
-
     var locD = new owned Domains();
-    set_domains(locD, Tr.D);
+
+    set_domains(locD, Tr_curr.D3, Tr_curr.D_grid);
 
     var locA_curr = new Arrays(locD);
     var locA_next = new Arrays(locD);
-    set_static_arrays(locA_curr, locD, locF);
-    set_static_arrays(locA_next, locD, locF);
 
-    initialize(Tr, locF.vel[Nt_start], locD);
+    initialize(Tr_next, locF.vel[Nt_start+2], locF.grd, locD);
+    initialize(Tr_curr, locF.vel[Nt_start+1], locF.grd, locD);
+    initialize(Tr_prev, locF.vel[Nt_start], locF.grd, locD);
 
-    update_halos(Tr);
+    update_thickness(Tr_next, locD, locF, Nt_start+2);
+    update_thickness(Tr_curr, locD, locF, Nt_start+1);
+    update_thickness(Tr_prev, locD, locF, Nt_start);
 
-    WriteOutput("initial.nc", Tr.tracer_old, "tracer", "stuff", 10);
+    update_dynamic_arrays(locA_curr, Tr_curr, locD, locF, Nt_start);
+//    update_dynamic_arrays(locA_prev, Tr_prev, locD, locF, Nt_start);
 
     // timestepping loop
-    for step in (Nt_start)..(Nt_start+Nt) {
+      for step in (Nt_start+1)..(Nt_start+Nt) {
 
-      // LF-AM3 timestep
-      TimeStep(locA_curr, locA_next, locD, Tr, locF, step);
+        // LF-AM3 timestep
+          TimeStep(locA_curr, locA_next, locD, Tr_prev, Tr_curr, Tr_next, locF, step);
 
-    } // timestepping loop
+      } // timestepping loop
 
   } // coforall loop
 

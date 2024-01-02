@@ -22,14 +22,14 @@ proc get_thickness0(ref h: [?D] real) {
   var Cs_w = Cs(sigma_w);
 
   var z_w : [0..Nz, D.dim[0], D.dim[1]] real;
-  var thickness0 : [0..<Nz, D.dim[0], D.dim[1]] real;
+  var thickness0 : [0..0, 0..<Nz, D.dim[0], D.dim[1]] real;
 
   forall (k,j,i) in z_w.domain {
     z_w[k,j,i] = h[j,i] * (hc*sigma_w[k] + h[j,i]*Cs_w[k]) / (hc + h[j,i]);
   }
 
-  forall (k,j,i) in thickness0.domain {
-    thickness0[k,j,i] = z_w[k+1,j,i] - z_w[k,j,i];
+  forall (t,k,j,i) in thickness0.domain {
+    thickness0[t,k,j,i] = z_w[k+1,j,i] - z_w[k,j,i];
   }
 
   return thickness0;

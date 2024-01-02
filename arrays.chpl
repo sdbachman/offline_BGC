@@ -1,4 +1,5 @@
 use files;
+use tracers;
 use domains;
 use INPUTS;
 use sigma_coordinate;
@@ -10,6 +11,7 @@ record Arrays {
   var v0, v1, v2, v3 = 1..0;
   var w0, w1, w2, w3 = 1..0;
 
+/*
   var h : [r2, r3] real;
   var thickness0 : [r1, r2, r3] real;
   var thickness : [r0, r1, r2, r3] real;
@@ -18,17 +20,21 @@ record Arrays {
 
   var zeta_old : [r0, r2, r3] real;
   var zeta_new : [r0, r2, r3] real;
+*/
 
   var u : [u0, u1, u2, u3] real;
   var U : [u0, u1, u2, u3] real;
+  var U_half : [u0, u1, u2, u3] real;
   var tmp_U : [u0, u1, u2, u3] real;
 
   var v : [v0, v1, v2, v3] real;
   var V : [v0, v1, v2, v3] real;
+  var V_half : [v0, v1, v2, v3] real;
   var tmp_V : [v0, v1, v2, v3] real;
 
   var w : [w0, w1, w2, w3] real;
   var W : [w0, w1, w2, w3] real;
+  var W_half : [w0, w1, w2, w3] real;
   var tmp_W : [w0, w1, w2, w3] real;
 
 
@@ -56,6 +62,7 @@ record Arrays {
 
 }
 
+/*
 proc set_static_arrays(ref A: Arrays, D: Domains, F: Files) {
 
   A.h = get_var(F.grd, "h", D.grid);
@@ -63,39 +70,28 @@ proc set_static_arrays(ref A: Arrays, D: Domains, F: Files) {
   A.thickness0 = get_thickness0(A.h);
 
 }
+*/
 
-proc update_dynamic_arrays(ref A: Arrays, D: Domains, F: Files, step : int) {
-
-  // Read in SSH, update thicknesses
-    A.zeta_new = get_var(F.vel[step], "zeta", D.rho_2D);
-
-    if (step == Nt_start) {
-      A.zeta_old = A.zeta_new;
-    }
-
-  // From SM09, Eq. 2.13
-    forall (t,k,j,i) in D.rho_3D with (ref A) {
-      A.thickness[t,k,j,i] = A.thickness0[k,j,i] * (1 + A.zeta_new[t,j,i] / A.h[j,i]);
-    }
+proc update_dynamic_arrays(ref A: Arrays, ref Tr: Tracers, D: Domains, F: Files, step : int) {
 
   // Read in u and v
     A.u = get_var(F.vel[step], "u", D.u_3D);
     A.v = get_var(F.vel[step], "v", D.v_3D);
-    A.w = get_var(F.vel[step], "omega", D.w_3D);
+//    A.w = get_var(F.vel[step], "omega", D.w_3D);
 
   // Update volumetric fluxes
     forall (t,k,j,i) in D.u_3D with (ref A) {
-      A.U[t,k,j,i] = A.u[t,k,j,i] * 0.5 * (A.thickness[t,k,j,i] + A.thickness[t,k,j,i+1]) * dy;
+      A.U[t,k,j,i] = A.u[t,k,j,i] * 0.5 * (Tr.thickness[t,k,j,i] + Tr.thickness[t,k,j,i+1]) * dy;
     }
 
     forall (t,k,j,i) in D.v_3D with (ref A) {
-      A.V[t,k,j,i] = A.v[t,k,j,i] * 0.5 * (A.thickness[t,k,j,i] + A.thickness[t,k,j+1,i]) * dx;
+      A.V[t,k,j,i] = A.v[t,k,j,i] * 0.5 * (Tr.thickness[t,k,j,i] + Tr.thickness[t,k,j+1,i]) * dx;
     }
 
-    // From SH05, Eq. 1.18
-    forall (t,k,j,i) in D.w_3D with (ref A) {
-      A.W[t,k,j,i] = A.w[t,k,j,i] * dx * dy;
-    }
+//    // From SH05, Eq. 1.18
+//    forall (t,k,j,i) in D.w_3D with (ref A) {
+//      A.W[t,k,j,i] = A.w[t,k,j,i] * dx * dy;
+//    }
 
 }
 

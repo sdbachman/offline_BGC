@@ -11,7 +11,7 @@ class Domains {
 
 }
 
-proc set_domains(arg: Domains, const full_domain: ?) {
+proc set_domains(arg: Domains, const full_domain: ?, const grid_domain: ?) {
 
   arg.rho_3D = full_domain.localSubdomain();
 
@@ -55,7 +55,7 @@ proc get_v(ref D: domain(4)) {
 
 proc get_w(ref D: domain(4)) {
 
-  var D_w = {D.dim[0], 0..(D.last[1]+1), D.dim[2], D.dim[3]};
+  var D_w = {D.dim[0], -1..D.last[1], D.dim[2], D.dim[3]};
 
   return D_w;
 }

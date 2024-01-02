@@ -102,7 +102,7 @@ proc get_var(filename : string, varName : string, dom_in) {
 }
 
 
-proc get_bry(filename : string, varName : string, ref arr, dom_in) {
+proc set_bry(filename : string, varName : string, ref arr, dom_in) {
 
         /* Some external procedure declarations */
           extern proc nc_get_vara_double(ncid : c_int, varid : c_int, startp : c_ptr(c_size_t), countp : c_ptr(c_size_t), ip : c_ptr(real(64))) : c_int;
@@ -388,47 +388,9 @@ proc create_file(filename : string, outvar : ?, out varid_out) {
 
 var y: atomic int;
 
-/*
-proc WriteOutput(filename : string, ref arr_out: [?D] real, varid_in : int) {
 
-coforall loc in Locales do on loc {
-
-  y.waitFor(here.id%numLocales);
-  //writeln("Starting on ", here.id);
-
-  var ncid : c_int;
-  var varid = varid_in : c_int;
-
-  extern proc nc_open(path : c_ptrConst(c_char), mode : c_int, ncidp : c_ptr(c_int)) : c_int;
-  nc_open( filename.c_str() , NC_WRITE, c_ptrTo(ncid));
-
-  /* Determine where to start reading file, and how many elements to read */
-  // Start specifies a hyperslab.  It expects an array of dimension sizes
-    var start = tuplify(D.localSubdomain().first);
-  // Count specifies a hyperslab.  It expects an array of dimension sizes
-    var count = tuplify(D.localSubdomain().shape);
-
-    var start_c : [0..#start.size] c_size_t;
-    var count_c : [0..#count.size] c_size_t;
-
-    for i in 0..<count.size {
-      start_c[i] = start[i] : c_size_t;
-      count_c[i] = count[i] : c_size_t;
-    }
-
-    extern proc nc_put_vara_double(ncid : c_int, varid : c_int, startp : c_ptr(c_size_t), countp : c_ptr(c_size_t), op : c_ptr(c_double)) : c_int;
-    nc_put_vara_double(ncid, varid, c_ptrTo(start_c), c_ptrTo(count_c), c_ptrTo(arr_out[start]));
-
-    nc_close(ncid);
-
-  const inc = (y.read() + 1) % numLocales;
-  y.write(inc);
-  }
-}
-*/
-
-
-proc WriteOutput(filename : string, ref arr_in: [?D] real, varName : string, units : string, i : int) {
+//proc WriteOutput(filename : string, ref arr_in: [?D] real, varName : string, units : string, i : int) {
+proc WriteOutput(ref arr_in: [?D] real, varName : string, units : string, i : int) {
 
   allLocalesBarrier.barrier();
 
@@ -437,7 +399,7 @@ proc WriteOutput(filename : string, ref arr_in: [?D] real, varName : string, uni
     const maxLen = 10;
     const zero_len = maxLen - currentIter.size;
     const paddedStr = (zero_len * "0") + currentIter;
-    //var filename = (varName + "." + paddedStr + ".nc");
+    var filename = (varName + "." + paddedStr + ".nc");
     //var filename = "tmp.nc";
 
     if (here.id == 0) {
