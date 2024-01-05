@@ -1,4 +1,4 @@
-use files;
+use params;
 use tracers;
 use domains;
 use INPUTS;
@@ -51,33 +51,33 @@ record Dynamics {
 
 }
 
-proc update_dynamics(ref U, ref V, ref H, D: Domains, F: Files, step : int) {
+proc update_dynamics(ref U, ref V, ref H, D: Domains, P: Params, step : int) {
 
   // Read in u and v
 
-    var u = get_var(F.vel[step], "u", D.u_3D);
-    var v = get_var(F.vel[step], "v", D.v_3D);
+    var u = get_var(P.velfiles[step], "u", D.u_3D);
+    var v = get_var(P.velfiles[step], "v", D.v_3D);
 
   // Get volumetric fluxes for (n+1) timestep
     forall (t,k,j,i) in D.u_3D {
-      U[t,k,j,i] = u[t,k,j,i] * 0.5 * (H[t,k,j,i] + H[t,k,j,i+1]) * dy;
+      U[t,k,j,i] = u[t,k,j,i] * 0.5 * (H[t,k,j,i] + H[t,k,j,i+1]) * P.dy;
     }
 
     forall (t,k,j,i) in D.v_3D {
-      V[t,k,j,i] = v[t,k,j,i] * 0.5 * (H[t,k,j,i] + H[t,k,j+1,i]) * dx;
+      V[t,k,j,i] = v[t,k,j,i] * 0.5 * (H[t,k,j,i] + H[t,k,j+1,i]) * P.dx;
     }
 
 }
 
-proc calc_W(ref U, ref V, ref W, D: Domains, ref H_n, ref H_np1) {
+proc calc_W(ref U, ref V, ref W, D: Domains, P: Params, ref H_n, ref H_np1) {
 
   if (here.id == 0) {
 
     forall (t,j,i) in {0..0, (D.rho_3D.first[2]+1)..(D.rho_3D.last[2]-1), (D.rho_3D.first[3]+1)..D.rho_3D.last[3]} {
 
       W[t,-1,j,i] = 0;
-      for k in 0..<Nz {
-        W[t,k,j,i] = W[t,k-1,j,i] - (H_np1[t,k,j,i]-H_n[t,k,j,i])*area/dt -
+      for k in 0..<P.Nz {
+        W[t,k,j,i] = W[t,k-1,j,i] - (H_np1[t,k,j,i]-H_n[t,k,j,i])*P.area/P.dt -
                    (U[t,k,j,i] - U[t,k,j,i-1] + V[t,k,j,i] - V[t,k,j-1,i]);
       }
     }
@@ -87,8 +87,8 @@ proc calc_W(ref U, ref V, ref W, D: Domains, ref H_n, ref H_np1) {
     forall (t,j,i) in {0..0, (D.rho_3D.first[2]+1)..(D.rho_3D.last[2]-1), (D.rho_3D.first[3])..D.rho_3D.last[3]-1} {
 
       W[t,-1,j,i] = 0;
-      for k in 0..<Nz {
-        W[t,k,j,i] = W[t,k-1,j,i] - (H_np1[t,k,j,i]-H_n[t,k,j,i])*area/dt -
+      for k in 0..<P.Nz {
+        W[t,k,j,i] = W[t,k-1,j,i] - (H_np1[t,k,j,i]-H_n[t,k,j,i])*P.area/P.dt -
                    (U[t,k,j,i] - U[t,k,j,i-1] + V[t,k,j,i] - V[t,k,j-1,i]);
       }
 
@@ -99,8 +99,8 @@ proc calc_W(ref U, ref V, ref W, D: Domains, ref H_n, ref H_np1) {
     forall (t,j,i) in {0..0, (D.rho_3D.first[2]+1)..(D.rho_3D.last[2]-1), (D.rho_3D.first[3])..D.rho_3D.last[3]} {
 
       W[t,-1,j,i] = 0;
-      for k in 0..<Nz {
-        W[t,k,j,i] = W[t,k-1,j,i] - (H_np1[t,k,j,i]-H_n[t,k,j,i])*area/dt -
+      for k in 0..<P.Nz {
+        W[t,k,j,i] = W[t,k-1,j,i] - (H_np1[t,k,j,i]-H_n[t,k,j,i])*P.area/P.dt -
                    (U[t,k,j,i] - U[t,k,j,i-1] + V[t,k,j,i] - V[t,k,j-1,i]);
       }
     }

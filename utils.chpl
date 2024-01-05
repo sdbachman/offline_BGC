@@ -2,7 +2,6 @@ use INPUTS;
 use dynamics;
 use domains;
 use tracers;
-use files;
 
 
 proc continuity_compare(ref Dyn: Dynamics, D: Domains, ref thickness_c, ref thickness_n, Trc: Tracers) {

@@ -1,31 +1,32 @@
 use Math;
+use params;
 use INPUTS;
 
-proc Cs(ref sigma: [?D] real) {
+proc Cs(ref sigma: [?D] real, P: Params) {
 
-  var C = (1 - cosh(theta_s * sigma)) / (cosh(theta_s) - 1);
-  var C2 = (exp(theta_b * C) - 1) / (1 - exp(-theta_b));
+  var C = (1 - cosh(P.theta_s * sigma)) / (cosh(P.theta_s) - 1);
+  var C2 = (exp(P.theta_b * C) - 1) / (1 - exp(-P.theta_b));
 
   return C2;
 }
 
-proc get_H0(ref h: [?D] real) {
+proc get_H0(ref h: [?D] real, P: Params) {
 
-  var k_w : [0..Nz] int;
+  var k_w : [0..P.Nz] int;
 
   for idx in k_w.domain {
     k_w[idx] = idx;
   }
 
-  var sigma_w = (k_w - Nz) / (1.0*Nz);
+  var sigma_w = (k_w - P.Nz) / (1.0*P.Nz);
 
-  var Cs_w = Cs(sigma_w);
+  var Cs_w = Cs(sigma_w, P);
 
-  var z_w : [0..Nz, D.dim[0], D.dim[1]] real;
-  var H0 : [0..0, 0..<Nz, D.dim[0], D.dim[1]] real;
+  var z_w : [0..P.Nz, D.dim[0], D.dim[1]] real;
+  var H0 : [0..0, 0..<P.Nz, D.dim[0], D.dim[1]] real;
 
   forall (k,j,i) in z_w.domain {
-    z_w[k,j,i] = h[j,i] * (hc*sigma_w[k] + h[j,i]*Cs_w[k]) / (hc + h[j,i]);
+    z_w[k,j,i] = h[j,i] * (P.hc*sigma_w[k] + h[j,i]*Cs_w[k]) / (P.hc + h[j,i]);
   }
 
   forall (t,k,j,i) in H0.domain {

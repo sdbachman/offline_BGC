@@ -11,7 +11,7 @@ use AllLocalesBarriers;
 use NetCDF_IO;
 use LF_AM3;
 use INPUTS;
-use files;
+use params;
 use domains;
 use dynamics;
 use tracers;
@@ -25,22 +25,22 @@ proc main() {
 
   coforall loc in Locales with (ref Tr) do on loc {
 
-    var locF = new owned Files();
-    var locD = new owned Domains();
+    var P = new owned Params();
+    var D = new owned Domains();
 
-    set_domains(locD, Tr.D3, Tr.D_grid);
+    set_domains(D, Tr.D3, Tr.D_grid);
 
-    var locA = new Dynamics(locD);
+    var Dyn = new Dynamics(D);
 
-    initialize(Tr, locF, locF.grd, locD);
+    initialize(Tr, P, D);
 
-    update_dynamics(locA.U_n, locA.V_n, Tr.H_n, locD, locF, Nt_start+1);
+    update_dynamics(Dyn.U_n, Dyn.V_n, Tr.H_n, D, P, P.Nt_start+1);
 
     // timestepping loop
-      for step in (Nt_start+1)..(Nt_start+Nt) {
+      for step in (P.Nt_start+1)..(P.Nt_start+P.Nt) {
 
         // LF-AM3 timestep
-          TimeStep(locA, locD, Tr, locF, step);
+          TimeStep(Dyn, D, Tr, P, step);
 
       } // timestepping loop
 

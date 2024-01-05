@@ -1,4 +1,5 @@
 use INPUTS;
+use params;
 
 use NetCDF.C_NetCDF;
 use CTypes;
@@ -102,7 +103,7 @@ proc get_var(filename : string, varName : string, dom_in) {
 }
 
 
-proc set_bry(filename : string, varName : string, ref arr, dom_in) {
+proc set_bry(P: Params, filename : string, varName : string, ref arr, dom_in) {
 
         /* Some external procedure declarations */
           extern proc nc_get_vara_double(ncid : c_int, varid : c_int, startp : c_ptr(c_size_t), countp : c_ptr(c_size_t), ip : c_ptr(real(64))) : c_int;
@@ -162,13 +163,13 @@ proc set_bry(filename : string, varName : string, ref arr, dom_in) {
           nc_inq_varid(ncid, vs.c_str(), c_ptrTo(varid_s));
 
           nc_get_vara_double(ncid, varid_w, c_ptrTo(start_w_c), c_ptrTo(count_w_c), c_ptrTo(tmp_west[start_w]));
-          arr[0,0..<Nz,..,0] = tmp_west;
+          arr[0,0..<P.Nz,..,0] = tmp_west;
 
           nc_get_vara_double(ncid, varid_n, c_ptrTo(start_n_c), c_ptrTo(count_n_c), c_ptrTo(tmp_north[start_n]));
-          arr[0,0..<Nz,last[2],first[3]..last[3]] = tmp_north;
+          arr[0,0..<P.Nz,last[2],first[3]..last[3]] = tmp_north;
 
           nc_get_vara_double(ncid, varid_s, c_ptrTo(start_s_c), c_ptrTo(count_s_c), c_ptrTo(tmp_south[start_s]));
-          arr[0,0..<Nz,0,first[3]..last[3]] = tmp_south;
+          arr[0,0..<P.Nz,0,first[3]..last[3]] = tmp_south;
 
           nc_close(ncid);
 
@@ -224,13 +225,13 @@ proc set_bry(filename : string, varName : string, ref arr, dom_in) {
           nc_inq_varid(ncid, vs.c_str(), c_ptrTo(varid_s));
 
           nc_get_vara_double(ncid, varid_e, c_ptrTo(start_e_c), c_ptrTo(count_e_c), c_ptrTo(tmp_east[start_e]));
-          arr[0,0..<Nz,..,last[3]] = tmp_east;
+          arr[0,0..<P.Nz,..,last[3]] = tmp_east;
 
           nc_get_vara_double(ncid, varid_n, c_ptrTo(start_n_c), c_ptrTo(count_n_c), c_ptrTo(tmp_north[start_n]));
-          arr[0,0..<Nz,last[2],first[3]..last[3]] = tmp_north;
+          arr[0,0..<P.Nz,last[2],first[3]..last[3]] = tmp_north;
 
           nc_get_vara_double(ncid, varid_s, c_ptrTo(start_s_c), c_ptrTo(count_s_c), c_ptrTo(tmp_south[start_s]));
-          arr[0,0..<Nz,0,first[3]..last[3]] = tmp_south;
+          arr[0,0..<P.Nz,0,first[3]..last[3]] = tmp_south;
 
           nc_close(ncid);
 
@@ -276,10 +277,10 @@ proc set_bry(filename : string, varName : string, ref arr, dom_in) {
           nc_inq_varid(ncid, vs.c_str(), c_ptrTo(varid_s));
 
           nc_get_vara_double(ncid, varid_n, c_ptrTo(start_n_c), c_ptrTo(count_n_c), c_ptrTo(tmp_north[start_n]));
-          arr[0,0..<Nz,last[2],first[3]..last[3]] = tmp_north;
+          arr[0,0..<P.Nz,last[2],first[3]..last[3]] = tmp_north;
 
           nc_get_vara_double(ncid, varid_s, c_ptrTo(start_s_c), c_ptrTo(count_s_c), c_ptrTo(tmp_south[start_s]));
-          arr[0,0..<Nz,0,first[3]..last[3]] = tmp_south;
+          arr[0,0..<P.Nz,0,first[3]..last[3]] = tmp_south;
 
           nc_close(ncid);
 
@@ -389,7 +390,6 @@ proc create_file(filename : string, outvar : ?, out varid_out) {
 var y: atomic int;
 
 
-//proc WriteOutput(filename : string, ref arr_in: [?D] real, varName : string, units : string, i : int) {
 proc WriteOutput(ref arr_in: [?D] real, varName : string, units : string, i : int) {
 
   allLocalesBarrier.barrier();

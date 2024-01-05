@@ -1,9 +1,10 @@
 use INPUTS;
 use dynamics;
+use params;
 use domains;
 
 
-proc calc_fluxes(ref U, ref V, ref W, ref Dyn: Dynamics, D: Domains, ref arr, ref H) {
+proc calc_fluxes(ref U, ref V, ref W, ref Dyn: Dynamics, D: Domains, P: Params, ref arr, ref H) {
 
   // Horizontal: upstream-biased parabolic interpolation: SM05, after 4.13
 
@@ -58,8 +59,8 @@ proc calc_fluxes(ref U, ref V, ref W, ref Dyn: Dynamics, D: Domains, ref arr, re
   //  Calculated with Implicit Fourth-order scheme:  White and Adcroft, 2008, Eq. 46  //
   //////////////////////////////////////////////////////////////////////////////////////
 
-  var Dp : domain(1) = {0..Nz};
-  var DpDp : domain(2) = {0..Nz, 0..Nz};
+  var Dp : domain(1) = {0..P.Nz};
+  var DpDp : domain(2) = {0..P.Nz, 0..P.Nz};
 
   forall (t,j,i) in {0..0,D.rho_3D.dim[2], D.rho_3D.dim[3]} with (ref Dyn) {
 
@@ -91,7 +92,7 @@ proc calc_fluxes(ref U, ref V, ref W, ref Dyn: Dynamics, D: Domains, ref arr, re
 
     // Top boundary extrapolation
     h_b = 0;
-    h_t = H[t,Nz-1,j,i];
+    h_t = H[t,P.Nz-1,j,i];
     iH = 1.0/(h_t - h_b);
     for k in 0..3 {
       M[k,0] = iH*(h_t - h_b);
@@ -99,10 +100,10 @@ proc calc_fluxes(ref U, ref V, ref W, ref Dyn: Dynamics, D: Domains, ref arr, re
       M[k,2] = (1.0/3.0)*iH*(h_t**3 - h_b**3);
       M[k,3] = 0.25 * iH*(h_t**4 - h_b**4);
 
-      B[k] = arr[t,Nz-1-k,j,i];
+      B[k] = arr[t,P.Nz-1-k,j,i];
 
-      h_b = h_b + H[t,Nz-1-k,j,i];
-      h_t = h_t + H[t,Nz-2-k,j,i];
+      h_b = h_b + H[t,P.Nz-1-k,j,i];
+      h_t = h_t + H[t,P.Nz-2-k,j,i];
       iH = 1.0/(h_t - h_b);
     }
 
@@ -115,11 +116,11 @@ proc calc_fluxes(ref U, ref V, ref W, ref Dyn: Dynamics, D: Domains, ref arr, re
     var Mf : [DpDp] real;
 
     Mf[0,0] = 1.0;
-    Mf[Nz,Nz] = 1.0;
+    Mf[P.Nz,P.Nz] = 1.0;
     Bf[0] = Ts_bot;
-    Bf[Nz] = Ts_top;
+    Bf[P.Nz] = Ts_top;
 
-    for k in 0..(Nz-2) {
+    for k in 0..(P.Nz-2) {
       var h0 = H[t,k,j,i];
       var h1 = H[t,k+1,j,i];
 
