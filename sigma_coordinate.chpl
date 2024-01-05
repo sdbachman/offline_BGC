@@ -9,7 +9,7 @@ proc Cs(ref sigma: [?D] real) {
   return C2;
 }
 
-proc get_thickness0(ref h: [?D] real) {
+proc get_H0(ref h: [?D] real) {
 
   var k_w : [0..Nz] int;
 
@@ -22,16 +22,16 @@ proc get_thickness0(ref h: [?D] real) {
   var Cs_w = Cs(sigma_w);
 
   var z_w : [0..Nz, D.dim[0], D.dim[1]] real;
-  var thickness0 : [0..0, 0..<Nz, D.dim[0], D.dim[1]] real;
+  var H0 : [0..0, 0..<Nz, D.dim[0], D.dim[1]] real;
 
   forall (k,j,i) in z_w.domain {
     z_w[k,j,i] = h[j,i] * (hc*sigma_w[k] + h[j,i]*Cs_w[k]) / (hc + h[j,i]);
   }
 
-  forall (t,k,j,i) in thickness0.domain {
-    thickness0[t,k,j,i] = z_w[k+1,j,i] - z_w[k,j,i];
+  forall (t,k,j,i) in H0.domain {
+    H0[t,k,j,i] = z_w[k+1,j,i] - z_w[k,j,i];
   }
 
-  return thickness0;
+  return H0;
 }
 
