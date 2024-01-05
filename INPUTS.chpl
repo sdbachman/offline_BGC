@@ -32,3 +32,6 @@ config const us = 0.16666666666666;
 
 // For AB3 scheme
 config const beta = 5.0/12.0;
+
+// For RK4 scheme
+config const one_sixth = 1.0 / 6.0;

@@ -13,7 +13,7 @@ use LF_AM3;
 use INPUTS;
 use files;
 use domains;
-use arrays;
+use dynamics;
 use tracers;
 
 proc main() {
@@ -30,11 +30,11 @@ proc main() {
 
     set_domains(locD, Tr.D3, Tr.D_grid);
 
-    var locA = new Arrays(locD);
+    var locA = new Dynamics(locD);
 
     initialize(Tr, locF, locF.grd, locD);
 
-    update_dynamic_arrays(locA.U_n, locA.V_n, Tr.H_n, locD, locF, Nt_start+1);
+    update_dynamics(locA.U_n, locA.V_n, Tr.H_n, locD, locF, Nt_start+1);
 
     // timestepping loop
       for step in (Nt_start+1)..(Nt_start+Nt) {
