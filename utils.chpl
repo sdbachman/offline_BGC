@@ -32,3 +32,41 @@ proc continuity_compare(ref Dyn: Dynamics, D: Domains, ref thickness_c, ref thic
     }
   }
 }
+
+proc find_nan(ref arr, ref Dyn: Dynamics, D: Domains, P: Params, ref H) {
+
+  if (here.id == 0) {
+    forall (t,k,j,i) in {0..0, 0..0, (D.rho_3D.first[2]+1)..(D.rho_3D.last[2]-1), (D.rho_3D.first[3]+1)..D.rho_3D.last[3]} with (ref Dyn) {
+      //writeln(k, " ", j, " ", i, ": ", Dyn.tmp_U[t,k,j,i], " ", Dyn.tmp_U[t,k,j,i-1], " ", Dyn.tmp_V[t,k,j,i], " ", Dyn.tmp_V[t,k,j-1,i], " ", Dyn.tmp_W[t,k,j,i], " ", Dyn.tmp_W[t,k-1,j,i], " ", H[t,k,j,i], " ", arr[t,k,j,i]);
+      if (isNan(Dyn.tmp_W[t,k,j,i])) {
+        writeln("Examining point (j,i)=(", j, ", ",i,")");
+        check_W(t,j,i, P, arr, H);
+        exit();
+      }
+
+    }
+  }
+  else if (here.id == (Locales.size-1)) {
+    forall (t,k,j,i) in {0..0, 0..0, (D.rho_3D.first[2]+1)..(D.rho_3D.last[2]-1), D.rho_3D.first[3]..(D.rho_3D.last[3]-1)} with (ref Dyn) {
+      //writeln(k, " ", j, " ", i, ": ", Dyn.tmp_U[t,k,j,i], " ", Dyn.tmp_U[t,k,j,i-1], " ", Dyn.tmp_V[t,k,j,i], " ", Dyn.tmp_V[t,k,j-1,i], " ", Dyn.tmp_W[t,k,j,i], " ", Dyn.tmp_W[t,k-1,j,i], " ", H[t,k,j,i], " ", arr[t,k,j,i]);
+      if (isNan(Dyn.tmp_W[t,k,j,i])) {
+        writeln("Examining point (j,i)=(", j, ", ",i,")");
+        check_W(t,j,i, P, arr, H);
+        exit();
+      }
+    }
+  }
+  else {
+    forall (t,k,j,i) in {0..0, 0..0, (D.rho_3D.first[2]+1)..(D.rho_3D.last[2]-1), D.rho_3D.first[3]..D.rho_3D.last[3]} with (ref Dyn) {
+      //writeln(k, " ", j, " ", i, ": ", Dyn.tmp_U[t,k,j,i], " ", Dyn.tmp_U[t,k,j,i-1], " ", Dyn.tmp_V[t,k,j,i], " ", Dyn.tmp_V[t,k,j-1,i], " ", Dyn.tmp_W[t,k,j,i], " ", Dyn.tmp_W[t,k-1,j,i], " ", H[t,k,j,i], " ", arr[t,k,j,i]);
+      if (isNan(Dyn.tmp_W[t,k,j,i])) {
+        writeln("Examining point (j,i)=(", j, ", ",i,")");
+        check_W(t,j,i, P, arr, H);
+        exit();
+      }
+    }
+  }
+
+  allLocalesBarrier.barrier();
+
+}

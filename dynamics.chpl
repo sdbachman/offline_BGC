@@ -4,6 +4,8 @@ use domains;
 use INPUTS;
 use sigma_coordinate;
 
+use AllLocalesBarriers;
+
 record Dynamics {
 
   var r0, r1, r2, r3 = 1..0;
@@ -67,6 +69,8 @@ proc update_dynamics(ref U, ref V, ref H, D: Domains, P: Params, step : int) {
       V[t,k,j,i] = v[t,k,j,i] * 0.5 * (H[t,k,j,i] + H[t,k,j+1,i]) * P.dx;
     }
 
+  allLocalesBarrier.barrier();
+
 }
 
 proc calc_W(ref U, ref V, ref W, D: Domains, P: Params, ref H_n, ref H_np1) {
@@ -106,11 +110,15 @@ proc calc_W(ref U, ref V, ref W, D: Domains, P: Params, ref H_n, ref H_np1) {
     }
   }
 
+  allLocalesBarrier.barrier();
+
 }
 
-proc calc_half_step_dyn(ref Dyn: Dynamics) {
+proc calc_half_step_dyn(ref Dyn: Dynamics, D: Domains) {
 
-  Dyn.U_np1h        = 0.5 * (Dyn.U_n + Dyn.U_np1);
-  Dyn.V_np1h        = 0.5 * (Dyn.V_n + Dyn.V_np1);
+  Dyn.U_np1h = 0.5 * (Dyn.U_n + Dyn.U_np1);
+  Dyn.V_np1h = 0.5 * (Dyn.V_n + Dyn.V_np1);
+
+  allLocalesBarrier.barrier();
 
 }

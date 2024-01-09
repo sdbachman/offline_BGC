@@ -21,29 +21,30 @@ proc main() {
   var t : stopwatch;
   t.start();
 
-  var Tr = new owned Tracers();
-
-  coforall loc in Locales with (ref Tr) do on loc {
+  coforall loc in Locales with (ref H_n) do on loc {
 
     var P = new owned Params();
     var D = new owned Domains();
 
-    set_domains(D, Tr.D3, Tr.D_grid);
+    set_domains(D, D3, D_grid);
+
+    initialize_tr(P, D);
 
     var Dyn = new Dynamics(D);
 
-    initialize(Tr, P, D);
-
-    update_dynamics(Dyn.U_n, Dyn.V_n, Tr.H_n, D, P, P.Nt_start+1);
+    update_dynamics(Dyn.U_n, Dyn.V_n, H_n, D, P, P.Nt_start+1);
 
     // timestepping loop
       for step in (P.Nt_start+1)..(P.Nt_start+P.Nt) {
 
         // LF-AM3 timestep
-          TimeStep(Dyn, D, Tr, P, step);
+          TimeStep(Dyn, D, P, step);
 
       } // timestepping loop
 
   } // coforall loop
+
+  t.stop();
+  writeln("Program finished in ", t.elapsed(), " seconds.");
 
 } // end program

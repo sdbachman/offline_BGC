@@ -286,109 +286,12 @@ proc set_bry(P: Params, filename : string, varName : string, ref arr, dom_in) {
 
          }
 
+  allLocalesBarrier.barrier();
+
 }
 
-
-proc create_file(filename : string, outvar : ?, out varid_out) {
-  /* IDs for the netCDF file, dimensions, and variables. */
-    var ncid, t_dimid, z_dimid, x_dimid, y_dimid : c_int;
-    var x_varid, y_varid, z_varid, t_varid : c_int;
-    var varid : c_int;
-
-    var ndims : int = 4;
-    var dimids: [0..#ndims] c_int;
-
-    var shape = outvar.shape;
-
-    var to : [1..shape[0]] real;
-    var zo : [1..shape[1]] real;
-    var yo : [1..shape[2]] real;
-    var xo : [1..shape[3]] real;
-    for i in 1..shape[0] {
-      to[i] = i;
-    }
-    for i in 1..shape[1] {
-      zo[i] = i;
-    }
-    for i in 1..shape[2] {
-      yo[i] = i;
-    }
-    for i in 1..shape[3] {
-      xo[i] = i;
-    }
-
-    var tName = "t";
-    var zName = "z";
-    var yName = "y";
-    var xName = "x";
-
-  /* Create the file. */
-    extern proc nc_create(path : c_ptrConst(c_char), cmode : c_int, ncidp : c_ptr(c_int)) : c_int;
-    //nc_create( filename.c_str(), NC_CLOBBER, c_ptrTo(ncid));
-    nc_create( filename.c_str(), NC_CLOBBER|NC_NETCDF4, c_ptrTo(ncid));
-
-  /* Define the dimensions. The record dimension is defined to have
-     unlimited length - it can grow as needed. In this example it is
-     the time dimension.*/
-    extern proc nc_def_dim(ncid : c_int, name : c_ptrConst(c_char), len : c_size_t, idp : c_ptr(c_int)) : c_int;
-    nc_def_dim(ncid, tName.c_str(), shape[0] : c_size_t, t_dimid);
-    nc_def_dim(ncid, zName.c_str(), shape[1] : c_size_t, z_dimid);
-    nc_def_dim(ncid, yName.c_str(), shape[2] : c_size_t, y_dimid);
-    nc_def_dim(ncid, xName.c_str(), shape[3] : c_size_t, x_dimid);
-
-  /* Define the coordinate variables. */
-    extern proc nc_def_var(ncid : c_int, name : c_ptrConst(c_char), xtype : nc_type, ndims : c_int, dimidsp : c_ptr(c_int), varidp : c_ptr(c_int)) : c_int;
-      nc_def_var(ncid, tName.c_str(), NC_FLOAT, 1 : c_int, c_ptrTo(t_dimid), c_ptrTo(t_varid));
-      nc_def_var(ncid, zName.c_str(), NC_FLOAT, 1 : c_int, c_ptrTo(z_dimid), c_ptrTo(z_varid));
-      nc_def_var(ncid, yName.c_str(), NC_FLOAT, 1 : c_int, c_ptrTo(y_dimid), c_ptrTo(y_varid));
-      nc_def_var(ncid, xName.c_str(), NC_FLOAT, 1 : c_int, c_ptrTo(x_dimid), c_ptrTo(x_varid));
-
-  /* Assign units attributes to coordinate variables. */
-  //  att_text = "meters";
-  //  nc_put_att_text(ncid, y_varid, "units".c_str(), att_text.numBytes : c_size_t, att_text.c_str());
-  //  att_text = "meters";
-  //  nc_put_att_text(ncid, x_varid, "units".c_str(), att_text.numBytes : c_size_t, att_text.c_str());
-
-  /* The dimids array is used to pass the dimids of the dimensions of
-     the netCDF variables. In C, the unlimited dimension must come first on the list of dimids. */
-    dimids[0] = t_dimid;
-    dimids[1] = z_dimid;
-    dimids[2] = y_dimid;
-    dimids[3] = x_dimid;
-
-  /* Define the netCDF variable. */
-    nc_def_var(ncid, "temp".c_str(), NC_FLOAT, ndims : c_int, c_ptrTo(dimids[0]), c_ptrTo(varid));
-    varid_out = varid : int;
-
-  /* Assign units attributes to the netCDF variables. */
-
-    /*
-    var maxval = max reduce(arr_out);
-    var valid_range = "(0, " + (maxval : string) + ")";
-    //nc_put_att_text(ncid, varid, "units".c_str(), units.numBytes : c_size_t, units.c_str());
-    nc_put_att_text(ncid, varid, "Range".c_str(), valid_range.numBytes : c_size_t, valid_range.c_str());
-    */
-
-    //int nc_def_var_fill(int ncid, int varid, int no_fill, const void* fill_value)
-    extern proc nc_def_var_fill(ncid : c_int, varid : c_int, no_fill : c_int, fill_value : c_ptr(c_double));
-    var fv = -999 : real;
-    nc_def_var_fill(ncid, varid, 0, c_ptrTo(fv));
-
-  /* End define mode. */
-    nc_enddef(ncid);
-
-  /* Write the coordinate variable data. */
-    extern proc nc_put_var_double(ncid : c_int, varid : c_int, op : c_ptr(c_double)) : c_int;
-    nc_put_var_double(ncid, t_varid, c_ptrTo(to[0]));
-    nc_put_var_double(ncid, z_varid, c_ptrTo(zo[0]));
-    nc_put_var_double(ncid, y_varid, c_ptrTo(yo[0]));
-    nc_put_var_double(ncid, x_varid, c_ptrTo(xo[0]));
-
-    nc_close(ncid);
-}
 
 var y: atomic int;
-
 
 proc WriteOutput(ref arr_in: [?D] real, varName : string, units : string, i : int) {
 
@@ -427,17 +330,17 @@ proc WriteOutput(ref arr_in: [?D] real, varName : string, units : string, i : in
     var yo : [0..<shape[2]] real;
     var xo : [0..<shape[3]] real;
 
-    for i in 0..<shape[0] {
-      to[i] = i;
+    //for i in 0..<shape[0] {
+      to[0] = dt_ * i;
+    //}
+    for ii in 0..<shape[1] {
+      zo[ii] = ii;
     }
-    for i in 0..<shape[1] {
-      zo[i] = i;
+    for ii in 0..<shape[2] {
+      yo[ii] = ii;
     }
-    for i in 0..<shape[2] {
-      yo[i] = i;
-    }
-    for i in 0..<shape[3] {
-      xo[i] = i;
+    for ii in 0..<shape[3] {
+      xo[ii] = ii;
     }
 
     var timeName = "time";
@@ -547,11 +450,8 @@ proc WriteOutput(ref arr_in: [?D] real, varName : string, units : string, i : in
     const inc = (y.read() + 1) % numLocales;
     y.write(inc);
 
-    allLocalesBarrier.barrier();
+//    allLocalesBarrier.barrier();
 }
-
-
-
 
 inline proc tuplify(x) {
   if isTuple(x) then return x; else return (x,);
