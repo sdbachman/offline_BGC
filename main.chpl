@@ -9,7 +9,7 @@ use Math;
 use AllLocalesBarriers;
 
 use NetCDF_IO;
-use LF_AM3;
+use RK4;
 use INPUTS;
 use params;
 use domains;
