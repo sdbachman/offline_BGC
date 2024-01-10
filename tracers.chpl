@@ -31,6 +31,7 @@ use AllLocalesBarriers;
   var k4 : [D3] real;
   var ktmp : [D3] real;
 
+  var mask_rho : [D_grid] real;
   var h : [D_grid] real;
   var H0 : [D3] real;
   var H_nm1 : [D3] real;
@@ -54,6 +55,7 @@ use AllLocalesBarriers;
 
 proc initialize_tr(P: Params, D) {
 
+    mask_rho[D.grid] = get_var(P.grdfile, "mask_rho", D.grid);
     h[D.grid] = get_var(P.grdfile, "h", D.grid);
 
     H0[D.rho_3D] = get_H0(h[D.grid], P);
@@ -68,6 +70,7 @@ proc initialize_tr(P: Params, D) {
     // Update the halos for the static arrays
       allLocalesBarrier.barrier();
       if (here.id == 0) {
+        mask_rho.updateFluff();
         h.updateFluff();
         H0.updateFluff();
       }
