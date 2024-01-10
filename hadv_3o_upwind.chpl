@@ -2,6 +2,7 @@ use INPUTS;
 use dynamics;
 use params;
 use domains;
+use tracers;
 
 use Time;
 use AllLocalesBarriers;

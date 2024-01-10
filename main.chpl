@@ -9,7 +9,7 @@ use Math;
 use AllLocalesBarriers;
 
 use NetCDF_IO;
-use RK4;
+use LF_AM3;
 use INPUTS;
 use params;
 use domains;
@@ -32,10 +32,10 @@ proc main() {
 
     var Dyn = new Dynamics(D);
 
-    update_dynamics(Dyn.U_n, Dyn.V_n, H_n, D, P, P.Nt_start+1);
+    update_dynamics(Dyn.U_n, Dyn.V_n, H_n, D, P, P.Nt_start+2);
 
     // timestepping loop
-      for step in (P.Nt_start+1)..(P.Nt_start+P.Nt) {
+      for step in (P.Nt_start+2)..(P.Nt_start+P.Nt) {
 
         // LF-AM3 timestep
           TimeStep(Dyn, D, P, step);
