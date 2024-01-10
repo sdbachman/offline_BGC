@@ -25,6 +25,7 @@ use AllLocalesBarriers;
 
   var tracer : [D3] real;
 
+// For RK4
   var k1 : [D3] real;
   var k2 : [D3] real;
   var k3 : [D3] real;
