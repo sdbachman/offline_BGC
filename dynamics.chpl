@@ -13,15 +13,11 @@ record Dynamics {
   var v0, v1, v2, v3 = 1..0;
   var w0, w1, w2, w3 = 1..0;
 
-  var U_nm2 : [u0, u1, u2, u3] real;
-  var U_nm1 : [u0, u1, u2, u3] real;
   var U_n : [u0, u1, u2, u3] real;
   var U_np1h : [u0, u1, u2, u3] real;
   var U_np1 : [u0, u1, u2, u3] real;
   var tmp_U : [u0, u1, u2, u3] real;
 
-  var V_nm1 : [v0, v1, v2, v3] real;
-  var V_nm2 : [v0, v1, v2, v3] real;
   var V_n : [v0, v1, v2, v3] real;
   var V_np1h : [v0, v1, v2, v3] real;
   var V_np1 : [v0, v1, v2, v3] real;
@@ -120,11 +116,8 @@ proc calc_W(ref U, ref V, ref W, D: Domains, P: Params, ref H_n, ref H_np1) {
 
 proc calc_half_step_dyn(ref Dyn: Dynamics, D: Domains, P: Params) {
 
-//  Dyn.U_np1h = 0.5 * (Dyn.U_n + Dyn.U_np1);
-//  Dyn.V_np1h = 0.5 * (Dyn.V_n + Dyn.V_np1);
-
-  Dyn.U_np1h = (1.5+P.beta)*Dyn.U_n - (0.5+2*P.beta)*Dyn.U_nm1 + P.beta*Dyn.U_nm2;
-  Dyn.V_np1h = (1.5+P.beta)*Dyn.V_n - (0.5+2*P.beta)*Dyn.V_nm1 + P.beta*Dyn.V_nm2;
+  Dyn.U_np1h = 0.5 * (Dyn.U_n + Dyn.U_np1);
+  Dyn.V_np1h = 0.5 * (Dyn.V_n + Dyn.V_np1);
 
   allLocalesBarrier.barrier();
 

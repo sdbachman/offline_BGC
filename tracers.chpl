@@ -27,7 +27,6 @@ use AllLocalesBarriers;
   var tracer : [D3] real;
   var tracer_np1h : [D3] real;
   var tracer_nm1 : [D3] real;
-  var tracer_nm2 : [D3] real;
 
   var H_plus : [D3] real;
   var H_minus : [D3] real;
@@ -36,26 +35,17 @@ use AllLocalesBarriers;
   var mask_rho : [D_grid] real;
   var h : [D_grid] real;
   var H0 : [D3] real;
-  var H_nm2 : [D3] real;
   var H_nm1 : [D3] real;
   var H_nm1h : [D3] real;
   var H_n : [D3] real;
   var H_np1h : [D3] real;
   var H_np1 : [D3] real;
-//  var H_np3h : [D3] real;
 
-  var zeta_nm2 : [D2] real;
   var zeta_nm1 : [D2] real;
   var zeta_nm1h : [D2] real;
   var zeta_n : [D2] real;
   var zeta_np1h : [D2] real;
   var zeta_np1 : [D2] real;
-//  var zeta_np3h : [D2] real;
-
-  var courant : [D3] real;
-  var div : [D3] real;
-  var div2 : [D3] real;
-  var dV  : [D3] real;
 
 
 proc initialize_tr(P: Params, D) {
@@ -68,10 +58,8 @@ proc initialize_tr(P: Params, D) {
     // Initialize tracer fields
       tracer[D.rho_3D]       = get_var(P.velfiles[P.Nt_start+2], "temp", D.rho_3D);
       tracer_nm1[D.rho_3D]  = get_var(P.velfiles[P.Nt_start+1], "temp", D.rho_3D);
-      tracer_nm2[D.rho_3D] = get_var(P.velfiles[P.Nt_start], "temp", D.rho_3D);
 
     // Initialize zeta and thicknesses
-      update_thickness(zeta_nm2, H_nm2, H0, h, D, P, P.Nt_start);
       update_thickness(zeta_nm1, H_nm1, H0, h, D, P, P.Nt_start+1);
       update_thickness(zeta_n, H_n, H0, h, D, P, P.Nt_start+2);
 
@@ -89,7 +77,6 @@ proc initialize_tr(P: Params, D) {
       if (here.id == 0) {
         tracer.updateFluff();
         tracer_nm1.updateFluff();
-        tracer_nm2.updateFluff();
       }
       allLocalesBarrier.barrier();
 
@@ -131,27 +118,19 @@ proc calc_half_step_tr(D: Domains, P: Params) {
     forall (t,j,i) in D.rho_2D {
       zeta_nm1h[t,j,i] = 0.5 * (zeta_nm1[t,j,i] + zeta_n[t,j,i]);
       zeta_np1h[t,j,i] = 0.5 * (zeta_n[t,j,i] + zeta_np1[t,j,i]);
-//        zeta_np1h[t,j,i] = (1.5 + P.beta) * zeta_n[t,j,i] - (0.5 + 2*P.beta) * zeta_nm1[t,j,i] + P.beta*zeta_nm2[t,j,i];
-//      zeta_np3h[t,j,i] = (1.5 + P.beta) * zeta_np1[t,j,i] - (0.5 + 2*P.beta) * zeta_n[t,j,i] + P.beta*zeta_nm1[t,j,i];
     }
 
   // From SM09, Eq. 2.13
     forall (t,k,j,i) in D.rho_3D {
       H_nm1h[t,k,j,i] = H0[t,k,j,i] * (1 + zeta_nm1h[t,j,i] / h[j,i]);
       H_np1h[t,k,j,i] = H0[t,k,j,i] * (1 + zeta_np1h[t,j,i] / h[j,i]);
-//      H_np3h[t,k,j,i] = H0[t,k,j,i] * (1 + zeta_np3h[t,j,i] / h[j,i]);
     }
-
-//    forall (t,k,j,i) in D.rho_3D {
-//      tracer_np1h[t,k,j,i] = (1.5+P.beta)*tracer[t,k,j,i] - (0.5+2*P.beta)*tracer_nm1[t,k,j,i] + P.beta*tracer_nm2[t,k,j,i];
-//    }
 
     allLocalesBarrier.barrier();
     if (here.id == 0) {
       H_nm1h.updateFluff();
       H_np1h.updateFluff();
       tracer_np1h.updateFluff();
-//      H_np3h.updateFluff();
     }
     allLocalesBarrier.barrier();
 }

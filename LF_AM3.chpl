@@ -46,41 +46,29 @@ proc TimeStep(ref Dyn: Dynamics, D: Domains, P: Params, step : int) {
     calc_vertical_flux(Dyn.W_n, Dyn, D, P, tracer, H_n);
 
     calc_auxiliary_thicknesses(Dyn, D, P);
-
     calc_predictor(Dyn, D, P);
     set_bry(P, P.bryfiles[step], "temp", tracer_np1h, D.rho_3D);
 
-
-
     calc_horizontal_fluxes(Dyn.U_np1h, Dyn.V_np1h, Dyn, D, P, tracer_np1h, H_np1h);
     calc_vertical_flux(Dyn.W_np1h, Dyn, D, P, tracer_np1h, H_np1h);
-
-    calc_courant(Dyn, D, P);
-    WriteOutput(courant, "cour", "stuff", step);
 
     calc_corrector(Dyn, D, P);
 
     allLocalesBarrier.barrier();
 
     forall (t,k,j,i) in D.rho_3D {
-//      H_nm1[t,k,j,i] = H_n[t,k,j,i];
+      H_nm1[t,k,j,i] = H_n[t,k,j,i];
       H_n[t,k,j,i] = H_np1[t,k,j,i];
-      tracer_nm2[t,k,j,i] = tracer_nm1[t,k,j,i];
       tracer_nm1[t,k,j,i] = tracer[t,k,j,i];
       tracer[t,k,j,i] = corrector[t,k,j,i];
     }
     set_bry(P, P.bryfiles[step+1], "temp", tracer, D.rho_3D);
 
-//    update_halos(H_nm1);
+    update_halos(H_nm1);
     update_halos(H_n);
     update_halos(tracer);
     update_halos(tracer_nm1);
-    update_halos(tracer_nm2);
 
-    Dyn.U_nm2 = Dyn.U_nm1;
-    Dyn.V_nm2 = Dyn.V_nm1;
-    Dyn.U_nm1 = Dyn.U_n;
-    Dyn.V_nm1 = Dyn.V_n;
     Dyn.U_n = Dyn.U_np1;
     Dyn.V_n = Dyn.V_np1;
     allLocalesBarrier.barrier();
@@ -155,35 +143,3 @@ proc calc_corrector(ref Dyn: Dynamics, D: Domains, P: Params) {
 
 }
 
-proc calc_courant(ref Dyn: Dynamics, D: Domains, P: Params) {
-
-  /////////////////////////////////////////
-  //  Calculate tracer field at (n+1) timestep  //
-  /////////////////////////////////////////
-
-  if (here.id == 0) {
-    forall (t,k,j,i) in {0..0, D.rho_3D.dim[1], (D.rho_3D.first[2]+1)..(D.rho_3D.last[2]-1), (D.rho_3D.first[3]+1)..D.rho_3D.last[3]} with (ref Dyn) {
-      courant[t,k,j,i] = P.dt * P.iarea *
-                                        ((max(Dyn.U_np1h[t,k,j,i],0.0) - min(Dyn.U_np1h[t,k,j,i-1],0.0))
-                                       + (max(Dyn.V_np1h[t,k,j,i],0.0) - min(Dyn.V_np1h[t,k,j-1,i],0.0))
-                                       + (max(Dyn.W_np1h[t,k,j,i],0.0) - min(Dyn.W_np1h[t,k-1,j,i],0.0))) / H_n[t,k,j,i];
-    }
-  }
-  else if (here.id == (Locales.size-1)) {
-    forall (t,k,j,i) in {0..0, D.rho_3D.dim[1], (D.rho_3D.first[2]+1)..(D.rho_3D.last[2]-1), D.rho_3D.first[3]..(D.rho_3D.last[3]-1)} with (ref Dyn) {
-      courant[t,k,j,i] = P.dt * P.iarea *
-                                        ((max(Dyn.U_np1h[t,k,j,i],0.0) - min(Dyn.U_np1h[t,k,j,i-1],0.0))
-                                       + (max(Dyn.V_np1h[t,k,j,i],0.0) - min(Dyn.V_np1h[t,k,j-1,i],0.0))
-                                       + (max(Dyn.W_np1h[t,k,j,i],0.0) - min(Dyn.W_np1h[t,k-1,j,i],0.0))) / H_n[t,k,j,i];
-    }
-  }
-  else {
-    forall (t,k,j,i) in {0..0, D.rho_3D.dim[1], (D.rho_3D.first[2]+1)..(D.rho_3D.last[2]-1), D.rho_3D.first[3]..D.rho_3D.last[3]} with (ref Dyn) {
-      courant[t,k,j,i] = P.dt * P.iarea *
-                                        ((max(Dyn.U_np1h[t,k,j,i],0.0) - min(Dyn.U_np1h[t,k,j,i-1],0.0))
-                                       + (max(Dyn.V_np1h[t,k,j,i],0.0) - min(Dyn.V_np1h[t,k,j-1,i],0.0))
-                                       + (max(Dyn.W_np1h[t,k,j,i],0.0) - min(Dyn.W_np1h[t,k-1,j,i],0.0))) / H_n[t,k,j,i];
-    }
-  }
-
-}

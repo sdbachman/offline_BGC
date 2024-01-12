@@ -32,8 +32,6 @@ proc main() {
 
     var Dyn = new Dynamics(D);
 
-    update_dynamics(Dyn.U_nm2, Dyn.V_nm2, H_nm2, D, P, P.Nt_start);
-    update_dynamics(Dyn.U_nm1, Dyn.V_nm1, H_nm1, D, P, P.Nt_start+1);
     update_dynamics(Dyn.U_n, Dyn.V_n, H_n, D, P, P.Nt_start+2);
 
     // timestepping loop
