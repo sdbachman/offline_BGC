@@ -72,9 +72,6 @@ proc calc_vertical_flux(ref W, ref Dyn: Dynamics, D: Domains, P: Params, ref arr
 //  var tmmp = gaussian(t,j,i,Ts_bot, Ts_top, arr, H, P, Dp, DpDp);
 
     Dyn.tmp_W[t,..,j,i] = tmmp * W[t,..,j,i];
-//    for k in -1..<P.Nz {
-//      Dyn.tmp_W[t,k,j,i] = max(W[t,k,j,i], 0.0) * tmmp[k+1] + min(W[t,k,j,i],0.0) * tmmp[k+2];
-//    }
 
   }
 
