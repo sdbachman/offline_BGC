@@ -43,7 +43,9 @@ class Params {
   // For RK4 scheme
   var one_sixth : real;
 
-
+  // For sponge
+  var v_sponge : real;
+  var sponge_width : real;
 
   proc init() {
 
@@ -89,6 +91,10 @@ class Params {
 
     // For RK4 scheme
     this.one_sixth = one_sixth_;
+
+    // For sponge
+    this.v_sponge = v_sponge_;
+    this.sponge_width = sponge_width_;
 
   }
 

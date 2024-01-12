@@ -23,7 +23,7 @@ proc calc_horizontal_fluxes(ref U, ref V, ref Dyn: Dynamics, D: Domains, P: Para
       Dyn.tmp_U[t,k,j,i] = 0.5*(arr[t,k,j,i] + arr[t,k,j,i+1]) * U[t,k,j,i] - mask_rho[j,i+2]*
                              (P.one_sixth * max(U[t,k,j,i], 0.0) * (arr[t,k,j,i+1] - arr[t,k,j,i])
                            +  P.one_sixth * min(U[t,k,j,i], 0.0) * (arr[t,k,j,i+2] - 2*arr[t,k,j,i+1] + arr[t,k,j,i]));
-    }
+   }
 
     forall (t,k,j,i) in {0..0, D.u_3D.dim[1], D.u_3D.dim[2], (D.u_3D.first[3]+1)..D.u_3D.last[3]} with (ref Dyn) {
       Dyn.tmp_U[t,k,j,i] = 0.5*(arr[t,k,j,i] + arr[t,k,j,i+1]) * U[t,k,j,i] - mask_rho[j,i-1]*mask_rho[j,i+2]*
@@ -36,7 +36,7 @@ proc calc_horizontal_fluxes(ref U, ref V, ref Dyn: Dynamics, D: Domains, P: Para
     forall (t,k,j,i) in {0..0, D.u_3D.dim[1], D.u_3D.dim[2], D.u_3D.last[3]..D.u_3D.last[3]} with (ref Dyn) {
       Dyn.tmp_U[t,k,j,i] = 0.5*(arr[t,k,j,i] + arr[t,k,j,i+1]) * U[t,k,j,i] - mask_rho[j,i-1]*
                              (P.one_sixth * max(U[t,k,j,i], 0.0) * (arr[t,k,j,i+1] - 2*arr[t,k,j,i] + arr[t,k,j,i-1])
-                           +  P.one_sixth * min(U[t,k,j,i], 0.0) * ( -arr[t,k,j,i+1] + arr[t,k,j,i]));
+                          +  P.one_sixth * min(U[t,k,j,i], 0.0) * ( -arr[t,k,j,i+1] + arr[t,k,j,i]));
     }
 
     forall (t,k,j,i) in {0..0, D.u_3D.dim[1], D.u_3D.dim[2], D.u_3D.first[3]..(D.u_3D.last[3]-1)} with (ref Dyn) {
@@ -58,19 +58,19 @@ proc calc_horizontal_fluxes(ref U, ref V, ref Dyn: Dynamics, D: Domains, P: Para
   /////////////////////////////////////////
 
   forall (t,k,j,i) in {0..0, D.v_3D.dim[1], D.v_3D.first[2]..D.v_3D.first[2], D.v_3D.dim[3]} with (ref Dyn) {
-    Dyn.tmp_V[t,k,j,i] = 0.5*(arr[t,k,j,i] + arr[t,k,j,i+1]) * V[t,k,j,i] - mask_rho[j+2,i]*
+    Dyn.tmp_V[t,k,j,i] = 0.5*(arr[t,k,j,i] + arr[t,k,j+1,i]) * V[t,k,j,i] - mask_rho[j+2,i]*
                              (P.one_sixth * max(V[t,k,j,i], 0.0) * (arr[t,k,j+1,i] - arr[t,k,j,i])
                            +  P.one_sixth * min(V[t,k,j,i], 0.0) * (arr[t,k,j+2,i] - 2*arr[t,k,j+1,i] + arr[t,k,j,i]));
   }
 
   forall (t,k,j,i) in {0..0, D.v_3D.dim[1], D.v_3D.last[2]..D.v_3D.last[2], D.v_3D.dim[3]} with (ref Dyn) {
-    Dyn.tmp_V[t,k,j,i] = 0.5*(arr[t,k,j,i] + arr[t,k,j,i+1]) * V[t,k,j,i] - mask_rho[j-1,i]*
+    Dyn.tmp_V[t,k,j,i] = 0.5*(arr[t,k,j,i] + arr[t,k,j+1,i]) * V[t,k,j,i] - mask_rho[j-1,i]*
                              (P.one_sixth * max(V[t,k,j,i], 0.0) * (arr[t,k,j+1,i] - 2*arr[t,k,j,i] + arr[t,k,j-1,i])
                            +  P.one_sixth * min(V[t,k,j,i], 0.0) * (-arr[t,k,j+1,i] + arr[t,k,j,i]));
   }
 
   forall (t,k,j,i) in {0..0, D.v_3D.dim[1], (D.v_3D.first[2]+1)..(D.v_3D.last[2]-1), D.v_3D.dim[3]} with (ref Dyn) {
-    Dyn.tmp_V[t,k,j,i] = 0.5*(arr[t,k,j,i] + arr[t,k,j,i+1]) * V[t,k,j,i] - mask_rho[j-1,i]*mask_rho[j+2,i]*
+    Dyn.tmp_V[t,k,j,i] = 0.5*(arr[t,k,j,i] + arr[t,k,j+1,i]) * V[t,k,j,i] - mask_rho[j-1,i]*mask_rho[j+2,i]*
                              (P.one_sixth * max(V[t,k,j,i], 0.0) * (arr[t,k,j+1,i] - 2*arr[t,k,j,i] + arr[t,k,j-1,i])
                            +  P.one_sixth * min(V[t,k,j,i], 0.0) * (arr[t,k,j+2,i] - 2*arr[t,k,j+1,i] + arr[t,k,j,i]));
   }

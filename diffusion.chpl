@@ -66,3 +66,15 @@ proc calc_diffusive_fluxes(ref U, ref V, D: Domains, P: Params, ref arr, ref H) 
 
 }
 
+proc initialize_sponge(D: Domains, P: Params) {
+
+  forall (t,k,j,i) in D.rho_3D {
+    var dist_from_x = min(i, P.Nx - 1 - i);
+    var dist_from_y = min(j, P.Ny - 1 - j);
+    var min_dist = max(0.0, min(dist_from_x, dist_from_y) - 1);
+    var amp = max(0.0, (P.sponge_width - min_dist) / P.sponge_width);
+    sponge[t,k,j,i] = P.v_sponge * amp;
+  }
+}
+
+

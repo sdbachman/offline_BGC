@@ -1,5 +1,6 @@
 use INPUTS;
 use dynamics;
+use diffusion;
 use domains;
 use tracers;
 use params;
@@ -19,13 +20,12 @@ use Time;
 //                                                    //
 ////////////////////////////////////////////////////////
 
-proc TimeStep(ref Dyn: Dynamics, D: Domains, P: Params, step : int) {
+proc TimeStep(ref Dyn: Dynamics, ref Diff: Diffusion, D: Domains, P: Params, step : int) {
 
   // Load velocity fields for the next timestep
     update_thickness(zeta_np1, H_np1, H0, h, D, P, step+1);
     update_dynamics(Dyn.U_np1, Dyn.V_np1, H_np1, D, P, step+1);
 
-//  // Predict tracer concentration at (n+1/2) using AB3 extrapolation
   // Calculate zeta and thickness at (n-1/2) and (n+1/2)
     calc_half_step_tr(D, P);
 
@@ -44,15 +44,18 @@ proc TimeStep(ref Dyn: Dynamics, D: Domains, P: Params, step : int) {
 
     calc_horizontal_fluxes(Dyn.U_n, Dyn.V_n, Dyn, D, P, tracer, H_n);
     calc_vertical_flux(Dyn.W_n, Dyn, D, P, tracer, H_n);
+    calc_diffusive_fluxes(Diff.U_n, Diff.V_n, D, P, tracer, H_n);
 
     calc_auxiliary_thicknesses(Dyn, D, P);
-    calc_predictor(Dyn, D, P);
-    set_bry(P, P.bryfiles[step], "temp", tracer_np1h, D.rho_3D);
+    calc_predictor(Dyn, Diff, D, P);
+    set_bry(P, P.bryfiles[step+1], "temp", tracer_np1h, D.rho_3D);
+    update_halos(tracer_np1h);
 
     calc_horizontal_fluxes(Dyn.U_np1h, Dyn.V_np1h, Dyn, D, P, tracer_np1h, H_np1h);
     calc_vertical_flux(Dyn.W_np1h, Dyn, D, P, tracer_np1h, H_np1h);
+    calc_diffusive_fluxes(Diff.U_np1h, Diff.V_np1h, D, P, tracer_np1h, H_np1h);
 
-    calc_corrector(Dyn, D, P);
+    calc_corrector(Dyn, Diff, D, P);
 
     allLocalesBarrier.barrier();
 
@@ -77,7 +80,7 @@ proc TimeStep(ref Dyn: Dynamics, D: Domains, P: Params, step : int) {
 
 }
 
-proc calc_predictor(ref Dyn: Dynamics, D: Domains, P: Params) {
+proc calc_predictor(ref Dyn: Dynamics, ref Diff: Diffusion, D: Domains, P: Params) {
 
   /////////////////////////////////////////
   //  Calculate tracer field at (n+1) timestep  //
@@ -88,7 +91,9 @@ proc calc_predictor(ref Dyn: Dynamics, D: Domains, P: Params) {
       tracer_np1h[t,k,j,i] = ( ( (0.5 + 2*P.gamma) * tracer[t,k,j,i] + (0.5 - 2*P.gamma) * tracer_nm1[t,k,j,i]) * H_minus[t,k,j,i]
               - (1 - 2*P.gamma) * P.dt * P.iarea*((Dyn.tmp_U[t,k,j,i] - Dyn.tmp_U[t,k,j,i-1])
                                                 + (Dyn.tmp_V[t,k,j,i] - Dyn.tmp_V[t,k,j-1,i])
-                                                + (Dyn.tmp_W[t,k,j,i] - Dyn.tmp_W[t,k-1,j,i]) ) ) / H_plus[t,k,j,i];
+                                                + (Dyn.tmp_W[t,k,j,i] - Dyn.tmp_W[t,k-1,j,i])
+                                                - (Diff.U_n[t,k,j,i] - Diff.U_n[t,k,j,i-1])
+                                                - (Diff.V_n[t,k,j,i] - Diff.V_n[t,k,j-1,i]) ) ) / H_plus[t,k,j,i];
     }
   }
   else if (here.id == (Locales.size-1)) {
@@ -96,7 +101,9 @@ proc calc_predictor(ref Dyn: Dynamics, D: Domains, P: Params) {
       tracer_np1h[t,k,j,i] = ( ( (0.5 + 2*P.gamma) * tracer[t,k,j,i] + (0.5 - 2*P.gamma) * tracer_nm1[t,k,j,i]) * H_minus[t,k,j,i]
               - (1 - 2*P.gamma) * P.dt * P.iarea*((Dyn.tmp_U[t,k,j,i] - Dyn.tmp_U[t,k,j,i-1])
                                                 + (Dyn.tmp_V[t,k,j,i] - Dyn.tmp_V[t,k,j-1,i])
-                                                + (Dyn.tmp_W[t,k,j,i] - Dyn.tmp_W[t,k-1,j,i]) ) ) / H_plus[t,k,j,i];
+                                                + (Dyn.tmp_W[t,k,j,i] - Dyn.tmp_W[t,k-1,j,i])
+                                                - (Diff.U_n[t,k,j,i] - Diff.U_n[t,k,j,i-1])
+                                                - (Diff.V_n[t,k,j,i] - Diff.V_n[t,k,j-1,i]) ) ) / H_plus[t,k,j,i];
     }
   }
   else {
@@ -104,13 +111,15 @@ proc calc_predictor(ref Dyn: Dynamics, D: Domains, P: Params) {
       tracer_np1h[t,k,j,i] = ( ( (0.5 + 2*P.gamma) * tracer[t,k,j,i] + (0.5 - 2*P.gamma) * tracer_nm1[t,k,j,i]) * H_minus[t,k,j,i]
               - (1 - 2*P.gamma) * P.dt * P.iarea*((Dyn.tmp_U[t,k,j,i] - Dyn.tmp_U[t,k,j,i-1])
                                                 + (Dyn.tmp_V[t,k,j,i] - Dyn.tmp_V[t,k,j-1,i])
-                                                + (Dyn.tmp_W[t,k,j,i] - Dyn.tmp_W[t,k-1,j,i]) ) ) / H_plus[t,k,j,i];
+                                                + (Dyn.tmp_W[t,k,j,i] - Dyn.tmp_W[t,k-1,j,i])
+                                                - (Diff.U_n[t,k,j,i] - Diff.U_n[t,k,j,i-1])
+                                                - (Diff.V_n[t,k,j,i] - Diff.V_n[t,k,j-1,i]) ) ) / H_plus[t,k,j,i];
     }
   }
 
 }
 
-proc calc_corrector(ref Dyn: Dynamics, D: Domains, P: Params) {
+proc calc_corrector(ref Dyn: Dynamics, ref Diff: Diffusion, D: Domains, P: Params) {
 
   /////////////////////////////////////////
   //  Calculate tracer field at (n+1) timestep  //
@@ -121,7 +130,9 @@ proc calc_corrector(ref Dyn: Dynamics, D: Domains, P: Params) {
       corrector[t,k,j,i] = (tracer[t,k,j,i]*H_n[t,k,j,i]
                          - P.dt*P.iarea*((Dyn.tmp_U[t,k,j,i] - Dyn.tmp_U[t,k,j,i-1])
                                        + (Dyn.tmp_V[t,k,j,i] - Dyn.tmp_V[t,k,j-1,i])
-                                       + (Dyn.tmp_W[t,k,j,i] - Dyn.tmp_W[t,k-1,j,i]) ) ) / H_np1[t,k,j,i];
+                                       + (Dyn.tmp_W[t,k,j,i] - Dyn.tmp_W[t,k-1,j,i])
+                                       - (Diff.U_np1h[t,k,j,i] - Diff.U_np1h[t,k,j,i-1])
+                                       - (Diff.V_np1h[t,k,j,i] - Diff.V_np1h[t,k,j-1,i]) ) ) / H_np1[t,k,j,i];
     }
   }
   else if (here.id == (Locales.size-1)) {
@@ -129,7 +140,9 @@ proc calc_corrector(ref Dyn: Dynamics, D: Domains, P: Params) {
       corrector[t,k,j,i] = (tracer[t,k,j,i]*H_n[t,k,j,i]
                          - P.dt*P.iarea*((Dyn.tmp_U[t,k,j,i] - Dyn.tmp_U[t,k,j,i-1])
                                        + (Dyn.tmp_V[t,k,j,i] - Dyn.tmp_V[t,k,j-1,i])
-                                       + (Dyn.tmp_W[t,k,j,i] - Dyn.tmp_W[t,k-1,j,i]) ) ) / H_np1[t,k,j,i];
+                                       + (Dyn.tmp_W[t,k,j,i] - Dyn.tmp_W[t,k-1,j,i])
+                                       - (Diff.U_np1h[t,k,j,i] - Diff.U_np1h[t,k,j,i-1])
+                                       - (Diff.V_np1h[t,k,j,i] - Diff.V_np1h[t,k,j-1,i]) ) ) / H_np1[t,k,j,i];
     }
   }
   else {
@@ -137,7 +150,9 @@ proc calc_corrector(ref Dyn: Dynamics, D: Domains, P: Params) {
       corrector[t,k,j,i] = (tracer[t,k,j,i]*H_n[t,k,j,i]
                          - P.dt*P.iarea*((Dyn.tmp_U[t,k,j,i] - Dyn.tmp_U[t,k,j,i-1])
                                        + (Dyn.tmp_V[t,k,j,i] - Dyn.tmp_V[t,k,j-1,i])
-                                       + (Dyn.tmp_W[t,k,j,i] - Dyn.tmp_W[t,k-1,j,i]) ) ) / H_np1[t,k,j,i];
+                                       + (Dyn.tmp_W[t,k,j,i] - Dyn.tmp_W[t,k-1,j,i])
+                                       - (Diff.U_np1h[t,k,j,i] - Diff.U_np1h[t,k,j,i-1])
+                                       - (Diff.V_np1h[t,k,j,i] - Diff.V_np1h[t,k,j-1,i]) ) ) / H_np1[t,k,j,i];
     }
   }
 

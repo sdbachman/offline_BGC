@@ -47,8 +47,9 @@ use AllLocalesBarriers;
   var zeta_np1h : [D2] real;
   var zeta_np1 : [D2] real;
 
+  var sponge : [D3] real;
 
-proc initialize_tr(P: Params, D) {
+proc initialize_tr(D, P: Params) {
 
     mask_rho[D.grid] = get_var(P.grdfile, "mask_rho", D.grid);
     h[D.grid] = get_var(P.grdfile, "h", D.grid);
@@ -130,7 +131,6 @@ proc calc_half_step_tr(D: Domains, P: Params) {
     if (here.id == 0) {
       H_nm1h.updateFluff();
       H_np1h.updateFluff();
-      tracer_np1h.updateFluff();
     }
     allLocalesBarrier.barrier();
 }

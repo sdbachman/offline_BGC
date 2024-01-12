@@ -14,6 +14,7 @@ use INPUTS;
 use params;
 use domains;
 use dynamics;
+use diffusion;
 use tracers;
 
 proc main() {
@@ -28,9 +29,11 @@ proc main() {
 
     set_domains(D, D3, D_grid);
 
-    initialize_tr(P, D);
+    initialize_tr(D, P);
+    initialize_sponge(D, P);
 
     var Dyn = new Dynamics(D);
+    var Diff = new Diffusion(D);
 
     update_dynamics(Dyn.U_n, Dyn.V_n, H_n, D, P, P.Nt_start+2);
 
@@ -38,7 +41,7 @@ proc main() {
       for step in (P.Nt_start+2)..(P.Nt_start+P.Nt) {
 
         // LF-AM3 timestep
-          TimeStep(Dyn, D, P, step);
+          TimeStep(Dyn, Diff, D, P, step);
 
       } // timestepping loop
 
