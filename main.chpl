@@ -9,7 +9,7 @@ use Math;
 use AllLocalesBarriers;
 
 use NetCDF_IO;
-use LF_AM3;
+use RK3;
 use INPUTS;
 use params;
 use domains;
@@ -35,13 +35,16 @@ proc main() {
     var Dyn = new Dynamics(D);
     var Diff = new Diffusion(D);
 
-    update_dynamics(Dyn.U_n, Dyn.V_n, H_n, D, P, P.Nt_start+2);
+    update_dynamics(Dyn.u_n, Dyn.v_n, Dyn.U_n, Dyn.V_n, H_n, D, P, P.Nt_start);
 
     // timestepping loop
-      for step in (P.Nt_start+2)..(P.Nt_start+P.Nt) {
+      for step in (P.Nt_start)..(P.Nt_start+P.Nt) {
 
-        // LF-AM3 timestep
+        // Step forward
           TimeStep(Dyn, Diff, D, P, step);
+
+        // Create polynomial fit to current grid
+//          Polyfit(D, P, tracer_dagger);
 
       } // timestepping loop
 

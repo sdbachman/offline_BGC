@@ -7,6 +7,11 @@ config var   velocity_files = '/glade/derecho/scratch/bachman/UCLA-ROMS/run/SMAL
 config var   boundary_files = '/glade/derecho/scratch/bachman/UCLA-ROMS/run/SMALL2/SMALL_bry.??????????????.nc';
 config const forcing_files  = '/glade/derecho/scratch/bachman/UCLA-ROMS/run/SMALL2/SMALL_frc.??????????????.nc';
 
+//config const gridfile       = '/glade/derecho/scratch/bachman/UCLA-ROMS/Work/Iceland1/INPUT/Iceland1_grd.nc';
+//config const velocity_files = '/glade/derecho/scratch/bachman/UCLA-ROMS/run/Iceland1/HIS/Iceland1_his.??????????????.nc';
+//config const boundary_files = '/glade/derecho/scratch/bachman/UCLA-ROMS/run/Iceland1/HIS/Iceland1_bry.??????????????.nc';
+//config const forcing_files  = '/glade/derecho/scratch/bachman/UCLA-ROMS/run/Iceland1/HIS/Iceland1_bry.??????????????.nc';
+
 config const Nx_ = 66;
 config const Ny_ = 34;
 config const Nz_ = 100;

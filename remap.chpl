@@ -1,24 +1,44 @@
 use INPUTS;
 use dynamics;
-use params;
 use domains;
+use tracers;
+use params;
+use NetCDF_IO;
+//use utils;
 
 use Math;
 use AllLocalesBarriers;
 use Time;
 
 
-proc calc_vertical_flux(ref W, ref Dyn: Dynamics, D: Domains, P: Params, ref arr, ref H) {
+// This function will apply the piecewise parabolic method (PPM) as described in
+// White and Adcroft (2008).
+
+/*
+proc Polyfit(D: Domains, P: Params) {
+
+  forall (t,j,i) in D.rho_3D {
+
+    var interface_values = calc_interface_values(t, j, i, D, P, tracer_dagger, H_dagger);
+
+    a0
+    a1
+    a2
+
+
+
+}
+*/
+
+proc calc_interface_values(t, j, i, D: Domains, P: Params, ref arr, ref H) {
 
   //////////////////////////////////////////////////////////////////////////////////////
-  //                                     W-fluxes                                     //
+  //                   Get tracer values at layer interfaces                          //
   //  Calculated with Implicit Fourth-order scheme:  White and Adcroft, 2008, Eq. 46  //
   //////////////////////////////////////////////////////////////////////////////////////
 
   var Dp : domain(1) = {0..P.Nz};
   var DpDp : domain(2) = {0..P.Nz, 0..P.Nz};
-
-  forall (t,j,i) in {0..0,D.rho_3D.dim[2], D.rho_3D.dim[3]} with (ref Dyn) {
 
     // Bottom boundary extrapolation
     // Calculated using a cubic polynomial over the bottom four cells
@@ -68,14 +88,9 @@ proc calc_vertical_flux(ref W, ref Dyn: Dynamics, D: Domains, P: Params, ref arr
 
     /////////////////////////////
 
-    var tmmp = thomas(t,j,i,Ts_bot, Ts_top, arr, H, P);
-//  var tmmp = gaussian(t,j,i,Ts_bot, Ts_top, arr, H, P, Dp, DpDp);
+    var interface_values = thomas(t,j,i,Ts_bot, Ts_top, arr, H, P);
 
-    Dyn.tmp_W[t,..,j,i] = tmmp * W[t,..,j,i];
-
-  }
-
-  allLocalesBarrier.barrier();
+  return interface_values;
 
 }
 
@@ -130,36 +145,5 @@ proc thomas(t, j, i, Ts_bot, Ts_top, ref arr, ref H, P: Params) {
     }
 
     return x;
-}
-
-proc gaussian(t, j, i, Ts_bot, Ts_top, ref arr, ref H, P: Params, Dp, DpDp) {
-
-    var Bf : [Dp] real;
-    var Mf : [DpDp] real;
-
-    Mf[0,0] = 1.0;
-    Mf[P.Nz,P.Nz] = 1.0;
-    Bf[0] = Ts_bot;
-    Bf[P.Nz] = Ts_top;
-
-    for k in 0..(P.Nz-2) {
-      var h0 = H[t,k,j,i];
-      var h1 = H[t,k+1,j,i];
-
-      var alpha = (h1**2) / ((h0 + h1)**2);
-      var beta = (h0**2) / ((h0 + h1)**2);
-      var b = 2*(h1**2)*(h1**2 + 2*h0**2 + 3*h0*h1) / ((h0+h1)**4);
-      var c = 2*(h0**2)*(h0**2 + 2*h1**2 + 3*h0*h1) / ((h0+h1)**4);
-
-      Mf[k+1,k] = alpha;
-      Mf[k+1,k+1] = 1.0;
-      Mf[k+1,k+2] = beta;
-
-      Bf[k+1] = b*arr[t,k,j,i] + c*arr[t,k+1,j,i];
-    }
-
-    var tmmp = solve(Mf,Bf);
-
-    return tmmp;
 }
 

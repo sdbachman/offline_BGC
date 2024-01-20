@@ -11,15 +11,11 @@ record Diffusion {
   var u0, u1, u2, u3 = 1..0;
   var v0, v1, v2, v3 = 1..0;
 
-  var U_nm2 : [u0, u1, u2, u3] real;
-  var U_nm1 : [u0, u1, u2, u3] real;
   var U_n : [u0, u1, u2, u3] real;
   var U_np1h : [u0, u1, u2, u3] real;
   var U_np1 : [u0, u1, u2, u3] real;
   var tmp_U : [u0, u1, u2, u3] real;
 
-  var V_nm1 : [v0, v1, v2, v3] real;
-  var V_nm2 : [v0, v1, v2, v3] real;
   var V_n : [v0, v1, v2, v3] real;
   var V_np1h : [v0, v1, v2, v3] real;
   var V_np1 : [v0, v1, v2, v3] real;
