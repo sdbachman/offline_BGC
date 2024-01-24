@@ -5,7 +5,6 @@ use domains;
 use tracers;
 use params;
 use hadv_3o_upwind;
-use remap;
 use NetCDF_IO;
 //use utils;
 
@@ -29,9 +28,9 @@ use Time;
 
 proc TimeStep(ref Dyn: Dynamics, ref Diff: Diffusion, D: Domains, P: Params, step : int) {
 
-  // Load velocity fields for the next timestep
-    update_thickness(zeta_np1, H_np1, H0, h, D, P, step+1);
-    update_dynamics(Dyn.u_np1, Dyn.v_np1, Dyn.U_np1, Dyn.V_np1, H_np1, D, P, step+1);
+//  // Load velocity fields for the next timestep
+//    update_thickness(zeta_np1, H_np1, H0, h, D, P, step+1);
+//    update_dynamics(Dyn.u_np1, Dyn.v_np1, Dyn.U_np1, Dyn.V_np1, H_np1, D, P, step+1);
 
   // Calculate horizontal velocities at the (n+1/2) time step.
     calc_half_step_dyn(Dyn, D, P);
@@ -42,8 +41,6 @@ proc TimeStep(ref Dyn: Dynamics, ref Diff: Diffusion, D: Domains, P: Params, ste
   /////////////////////////////////////
   //       Update H using RK3        //
   /////////////////////////////////////
-
-    WriteOutput(H_n, "H", "stuff", step);
 
     RHS_H(k1, Dyn.U_n, Dyn.V_n, D, P);
 
@@ -79,37 +76,56 @@ proc TimeStep(ref Dyn: Dynamics, ref Diff: Diffusion, D: Domains, P: Params, ste
     calc_horizontal_fluxes(Dyn.U_n, Dyn.V_n, Dyn.tmp_U, Dyn.tmp_V, D, P, tracer_n);
     calc_diffusive_fluxes(Diff.tmp_U, Diff.tmp_V, D, P, tracer_n, H_n);
 
-    RHS_tr(k1, Dyn.tmp_U, Dyn.tmp_V, Diff.tmp_U, Diff.tmp_V, H_n, D, P);
+    RHS_tr(k1, Dyn.tmp_U, Dyn.tmp_V, Diff.tmp_U, Diff.tmp_V, D, P);
 
     forall (t,k,j,i) in D.rho_3D {
-      ktmp[t,k,j,i] =  tracer_n[t,k,j,i] + 0.5*P.dt*k1[t,k,j,i];
+      ktmp[t,k,j,i] =  (tracer_n[t,k,j,i]*H_n[t,k,j,i] + 0.5*P.dt*k1[t,k,j,i]) / H_np1h[t,k,j,i];
     }
     update_halos(ktmp);
 
     calc_horizontal_fluxes(Dyn.U_np1h, Dyn.V_np1h, Dyn.tmp_U, Dyn.tmp_V, D, P, ktmp);
     calc_diffusive_fluxes(Diff.tmp_U, Diff.tmp_V, D, P, ktmp, H_np1h);
 
-    RHS_tr(k2, Dyn.tmp_U, Dyn.tmp_V, Diff.tmp_U, Diff.tmp_V, H_np1h, D, P);
+    RHS_tr(k2, Dyn.tmp_U, Dyn.tmp_V, Diff.tmp_U, Diff.tmp_V, D, P);
 
     forall (t,k,j,i) in D.rho_3D {
-      ktmp[t,k,j,i] =  tracer_n[t,k,j,i] - P.dt*k1[t,k,j,i] + 2*P.dt*k2[t,k,j,i];
+      ktmp[t,k,j,i] =  (tracer_n[t,k,j,i]*H_np1h[t,k,j,i] - P.dt*k1[t,k,j,i] + 2*P.dt*k2[t,k,j,i]) / H_np1[t,k,j,i];
     }
     update_halos(ktmp);
 
     calc_horizontal_fluxes(Dyn.U_np1, Dyn.V_np1, Dyn.tmp_U, Dyn.tmp_V, D, P, ktmp);
     calc_diffusive_fluxes(Diff.tmp_U, Diff.tmp_V, D, P, ktmp, H_np1);
 
-    RHS_tr(k3, Dyn.tmp_U, Dyn.tmp_V, Diff.tmp_U, Diff.tmp_V, H_np1, D, P);
+    RHS_tr(k3, Dyn.tmp_U, Dyn.tmp_V, Diff.tmp_U, Diff.tmp_V, D, P);
 
     forall (t,k,j,i) in D.rho_3D {
-      tracer_dagger[t,k,j,i] = tracer_n[t,k,j,i] + P.one_sixth*P.dt*
-                           (k1[t,k,j,i] + 4*k2[t,k,j,i] + k3[t,k,j,i]);
+      tracer_dagger[t,k,j,i] = (tracer_n[t,k,j,i]*H_n[t,k,j,i] + P.one_sixth*P.dt*
+                           (k1[t,k,j,i] + 4*k2[t,k,j,i] + k3[t,k,j,i])) / H_dagger[t,k,j,i];
     }
 
     allLocalesBarrier.barrier();
 
 }
 
+proc update_fields(ref Dyn: Dynamics, ref Diff: Diffusion, D: Domains, P: Params, step : int) {
+
+    forall (t,k,j,i) in D.rho_3D {
+      H_n[t,k,j,i] = H_np1[t,k,j,i];
+    }
+    set_bry(P, P.bryfiles[step+1], "temp", tracer_n, D.rho_3D);
+
+    update_halos(H_n);
+    update_halos(tracer_n);
+
+    Dyn.U_n = Dyn.U_np1;
+    Dyn.V_n = Dyn.V_np1;
+    allLocalesBarrier.barrier();
+
+  // Load velocity fields for the next timestep
+    update_thickness(zeta_np1, H_np1, H0, h, D, P, step+2);
+    update_dynamics(Dyn.u_np1, Dyn.v_np1, Dyn.U_np1, Dyn.V_np1, H_np1, D, P, step+2);
+
+}
 
 proc RHS_H(ref tmp, ref U, ref V, D: Domains, P: Params) {
 
@@ -141,7 +157,9 @@ proc RHS_H(ref tmp, ref U, ref V, D: Domains, P: Params) {
 }
 
 
-proc RHS_tr(ref tmp, ref U, ref V, ref diff_U, ref diff_V, ref H, D: Domains, P: Params) {
+
+
+proc RHS_tr(ref tmp, ref U, ref V, ref diff_U, ref diff_V, D: Domains, P: Params) {
 
   /////////////////////////////////////////
   //  Calculate tracer field at (n+1) timestep  //
@@ -152,7 +170,7 @@ proc RHS_tr(ref tmp, ref U, ref V, ref diff_U, ref diff_V, ref H, D: Domains, P:
       tmp[t,k,j,i] = - P.iarea * (  (U[t,k,j,i] - U[t,k,j,i-1])
                                   + (V[t,k,j,i] - V[t,k,j-1,i])
                                   - (diff_U[t,k,j,i] - diff_U[t,k,j,i-1])
-                                  - (diff_V[t,k,j,i] - diff_V[t,k,j-1,i]) ) / H[t,k,j,i];
+                                  - (diff_V[t,k,j,i] - diff_V[t,k,j-1,i]) );
     }
   }
   else if (here.id == (Locales.size-1)) {
@@ -160,7 +178,7 @@ proc RHS_tr(ref tmp, ref U, ref V, ref diff_U, ref diff_V, ref H, D: Domains, P:
       tmp[t,k,j,i] = - P.iarea * (  (U[t,k,j,i] - U[t,k,j,i-1])
                                   + (V[t,k,j,i] - V[t,k,j-1,i])
                                   - (diff_U[t,k,j,i] - diff_U[t,k,j,i-1])
-                                  - (diff_V[t,k,j,i] - diff_V[t,k,j-1,i]) ) / H[t,k,j,i];
+                                  - (diff_V[t,k,j,i] - diff_V[t,k,j-1,i]) );
     }
   }
   else {
@@ -168,7 +186,7 @@ proc RHS_tr(ref tmp, ref U, ref V, ref diff_U, ref diff_V, ref H, D: Domains, P:
       tmp[t,k,j,i] = - P.iarea * (  (U[t,k,j,i] - U[t,k,j,i-1])
                                   + (V[t,k,j,i] - V[t,k,j-1,i])
                                   - (diff_U[t,k,j,i] - diff_U[t,k,j,i-1])
-                                  - (diff_V[t,k,j,i] - diff_V[t,k,j-1,i]) ) / H[t,k,j,i];
+                                  - (diff_V[t,k,j,i] - diff_V[t,k,j-1,i]) );
     }
   }
 

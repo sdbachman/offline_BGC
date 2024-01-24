@@ -43,6 +43,9 @@ class Params {
   // For RK4 scheme
   var one_sixth : real;
 
+  // For PPM scheme
+  var one_third : real;
+
   // For sponge
   var v_sponge : real;
   var sponge_width : real;
@@ -91,6 +94,9 @@ class Params {
 
     // For RK4 scheme
     this.one_sixth = one_sixth_;
+
+    // For PPM scheme
+    this.one_third = one_third_;
 
     // For sponge
     this.v_sponge = v_sponge_;

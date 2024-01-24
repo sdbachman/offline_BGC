@@ -33,13 +33,9 @@ use AllLocalesBarriers;
   var k3 : [D3] real;
   var ktmp : [D3] real;
 
-// For PPM remapping
-  var a0 : [D3] real;
-  var a1 : [D3] real;
-  var a2 : [D3] real;
-
   var tracer_n : [D3] real;
   var tracer_np1h : [D3] real;
+  var tracer_np1 : [D3] real;
   var tracer_dagger : [D3] real;
 
   var mask_rho : [D_grid] real;

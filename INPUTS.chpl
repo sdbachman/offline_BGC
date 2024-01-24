@@ -42,6 +42,9 @@ config const beta_ = 5.0/12.0;
 // For RK4 scheme
 config const one_sixth_ = 1.0 / 6.0;
 
+// For PPM scheme
+config const one_third_ = 1.0 / 3.0;
+
 // For sponge
 config const v_sponge_ : real = 300;
 config const sponge_width_ : real = 15;

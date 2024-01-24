@@ -16,6 +16,7 @@ use domains;
 use dynamics;
 use diffusion;
 use tracers;
+use PPM;
 
 proc main() {
 
@@ -35,7 +36,12 @@ proc main() {
     var Dyn = new Dynamics(D);
     var Diff = new Diffusion(D);
 
-    update_dynamics(Dyn.u_n, Dyn.v_n, Dyn.U_n, Dyn.V_n, H_n, D, P, P.Nt_start);
+    // Load fields for the first timestep
+      update_dynamics(Dyn.u_n, Dyn.v_n, Dyn.U_n, Dyn.V_n, H_n, D, P, P.Nt_start);
+
+    // Load fields for the next timestep
+      update_thickness(zeta_np1, H_np1, H0, h, D, P, P.Nt_start+1);
+      update_dynamics(Dyn.u_np1, Dyn.v_np1, Dyn.U_np1, Dyn.V_np1, H_np1, D, P, P.Nt_start+1);
 
     // timestepping loop
       for step in (P.Nt_start)..(P.Nt_start+P.Nt) {
@@ -44,7 +50,21 @@ proc main() {
           TimeStep(Dyn, Diff, D, P, step);
 
         // Create polynomial fit to current grid
-//          Polyfit(D, P, tracer_dagger);
+          Polyfit(D, P);
+
+        // Update fields to prepare for next time step
+          update_fields(Dyn, Diff, D, P, step);
+
+//WriteOutput(H_dagger, "H_np1", "stuff", step+1);
+//allLocalesBarrier.barrier();
+//WriteOutput(tracer_dagger, "after", "stuff", step+1);
+//allLocalesBarrier.barrier();
+
+WriteOutput(H_n, "H_n", "stuff", step);
+allLocalesBarrier.barrier();
+WriteOutput(tracer_n, "after", "stuff", step);
+allLocalesBarrier.barrier();
+
 
       } // timestepping loop
 
