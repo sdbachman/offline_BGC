@@ -17,6 +17,9 @@ use Time;
 proc Polyfit(D: Domains, P: Params) {
 
   forall (t,j,i) in {0..0,D.rho_3D.dim[2], D.rho_3D.dim[3]} {
+
+  if (mask_rho[j,i] == 1) {
+
     //writeln("On point (", j, ", ", i, ")");
 
     var interface_values = calc_interface_values(t, j, i, D, P, tracer_dagger, H_dagger);
@@ -35,38 +38,38 @@ proc Polyfit(D: Domains, P: Params) {
 
     // These are vector copies of each column.  H_orig is going to have one extra layer
     // to allow the reconstruction loop to exit gracefully.
-    var H_orig = H_dagger[t,..,j,i];
-    var H_new = H_np1[t,..,j,i];
+
+      var H_orig : [0..<P.Nz] real;
+      var H_new  : [0..<P.Nz] real;
+      for kk in 0..<P.Nz {
+        H_orig[kk] = H_dagger[t,kk,j,i];
+        H_new[kk]  = H_np1[t,kk,j,i];
+      }
 
     // Going to normalize the thicknesses to make the forthcoming loop logic and
     // tracer conservation a bit easier. This is just for bookkeeping here and will not
     // affect the actual thicknesses.
-    H_new = H_new * (+ reduce H_orig) / (+ reduce H_new);
+      H_new = H_new * (+ reduce H_orig) / (+ reduce H_new);
 
     // These represent the indices in each column
-    var k_orig = 0;
-    var curr_k_new  = 0;
+      var k_orig = 0;
+      var curr_k_new  = 0;
 
     // These represent how much thickness we have left before we exit the current cell
-    var curr_H_orig : real = H_orig[0];
-    var curr_H_new  : real = H_new[0];
+      var curr_H_orig : real = H_orig[0];
+      var curr_H_new  : real = H_new[0];
 
     // These identify our position within the current cell
-    var z0       : real = 0;
-    var z1       : real = 1;
+      var z0 : real = 0;
+      var z1 : real = 1;
 
     // This holds the reconstruction
     var reconstruction : [0..<P.Nz] real;
 
 //    if (i,j) == (24,17) {
 
-//writeln("New and old thicknesses:");
-//for kk in 0..<P.Nz {
-//  writeln(H_orig[kk], " ", H_new[kk]);
-//}
-//writeln();
-
     var tol = 1e-5;
+
     // Going to overwrite tracer_n with the interpolated values
     label ko for k_new in 0..<P.Nz {
 //writeln("Starting on new layer ", k_new);
@@ -93,6 +96,7 @@ proc Polyfit(D: Domains, P: Params) {
           z0 = 0;
           // Increment k_orig only if z1 = 1
           k_orig += (floor(z1) : int);
+
         }
         // This will ensure z0 = 0 if z1 = 1; otherwise if z1<1 then z0=z1
         z0 = z1 - floor(z1);
@@ -107,40 +111,20 @@ proc Polyfit(D: Domains, P: Params) {
     }
 
 /*
-    var p1 = (+ reduce H_orig);
-    var p2 = (+ reduce H_new);
-    var p3 = (+ reduce (H_orig * tracer_dagger[t,..,j,i]) );
-    var p4 = (+ reduce (H_new * reconstruction) );
-    writeln("Total H_orig: ", p1);
-    writeln("Total H_new: ", p2);
-    writeln("integrated orig: ", p3);
-    writeln("integrated new: ", p4);
-    writeln("Made it through!");
-*/
-
-/*
     // Adjust values to satisfy conservation.
     var integrated_orig = (+ reduce (H_orig * tracer_dagger[t,..,j,i]) );
     var integrated_new  = (+ reduce (H_new * reconstruction) );
     var int_ratio = integrated_orig / integrated_new;
     reconstruction = reconstruction * int_ratio;
 */
-    tracer_n[t,..,j,i] = reconstruction;
 
-    if (i,j) == (42,32) {
-
-    var p3 = (+ reduce (H_orig * tracer_dagger[t,..,j,i]) );
-    var p4 = (+ reduce (H_new * reconstruction) );
-    writeln("integrated orig: ", p3);
-    writeln("integrated new: ", p4);
-
-    writeln();
-    writeln("Final values:");
     for kk in 0..<P.Nz {
-      writeln(H_n[t,kk,j,i], " ", H_orig[kk], " ", H_new[kk], " ", tracer_n[t,kk,j,i]);
+      tracer_n[t,kk,j,i] = reconstruction[kk];
     }
 
-    } // if (j,i)
+// } // (i,j)
+
+} // mask_rho
 
   } // end of forall
 

@@ -28,10 +28,6 @@ use Time;
 
 proc TimeStep(ref Dyn: Dynamics, ref Diff: Diffusion, D: Domains, P: Params, step : int) {
 
-//  // Load velocity fields for the next timestep
-//    update_thickness(zeta_np1, H_np1, H0, h, D, P, step+1);
-//    update_dynamics(Dyn.u_np1, Dyn.v_np1, Dyn.U_np1, Dyn.V_np1, H_np1, D, P, step+1);
-
   // Calculate horizontal velocities at the (n+1/2) time step.
     calc_half_step_dyn(Dyn, D, P);
 

@@ -52,19 +52,11 @@ proc main() {
         // Create polynomial fit to current grid
           Polyfit(D, P);
 
+        // WriteOutput(tracer_n, "after", "stuff", step);
+        // allLocalesBarrier.barrier();
+
         // Update fields to prepare for next time step
           update_fields(Dyn, Diff, D, P, step);
-
-//WriteOutput(H_dagger, "H_np1", "stuff", step+1);
-//allLocalesBarrier.barrier();
-//WriteOutput(tracer_dagger, "after", "stuff", step+1);
-//allLocalesBarrier.barrier();
-
-WriteOutput(H_n, "H_n", "stuff", step);
-allLocalesBarrier.barrier();
-WriteOutput(tracer_n, "after", "stuff", step);
-allLocalesBarrier.barrier();
-
 
       } // timestepping loop
 
