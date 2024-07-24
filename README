@@ -1,0 +1,2 @@
+chpl main.chpl -lnetcdf -L/opt/cray/pe/netcdf/4.9.0.7/gnu/9.1/lib -I/opt/cray/pe/netcdf/4.9.0.7/gnu/9.1/include -I./c-blosc/blosc -L./c-blosc/build/blosc -lnetcdf -L/opt/cray/pe/netcdf/4.9.0.7/gnu/9.1/lib -I/opt/cray/pe/netcdf/4.9.0.7/gnu/9.1/include --ldflags="-Wl,-rpath,/opt/cray/pe/netcdf/4.9.0.7/gnu/9.1/lib -Wl,-rpath,/opt/cray/pe/netcdf/4.9.0.7/gnu/9.1/lib" --fast
+
